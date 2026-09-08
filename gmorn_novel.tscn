@@ -1,0 +1,130 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="gmorn_novel.gd" id="1_controller"]
+
+[node name="NovelOverlay" type="Control"]
+unique_name_in_owner = true
+z_index = 1000
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_controller")
+
+[node name="NovelBackground" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 0
+
+[node name="NovelBackgroundNext" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 0
+
+[node name="Portraits" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+
+[node name="Shorts" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1920.0
+offset_bottom = 1080.0
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset = Vector2(960, 540)
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="DialoguePanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -720.0
+offset_top = -290.0
+offset_right = 720.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="Margin" type="MarginContainer" parent="DialoguePanel"]
+layout_mode = 2
+
+[node name="Content" type="Control" parent="DialoguePanel/Margin"]
+layout_mode = 2
+
+[node name="NovelSpeaker" type="RichTextLabel" parent="DialoguePanel/Margin/Content"]
+unique_name_in_owner = true
+offset_left = 70.0
+offset_top = 8.0
+offset_right = 1350.0
+offset_bottom = 58.0
+scale = Vector2(1.069, 0.98)
+theme_override_colors/default_color = Color(1, 0.921569, 0.0156863, 1)
+theme_override_font_sizes/normal_font_size = 40
+text = "話者"
+
+[node name="NovelMessage" type="RichTextLabel" parent="DialoguePanel/Margin/Content"]
+unique_name_in_owner = true
+offset_left = 72.0
+offset_top = 70.0
+offset_right = 1340.0
+offset_bottom = 240.0
+scale = Vector2(1, 0.98)
+theme_override_font_sizes/normal_font_size = 40
+bbcode_enabled = true
+text = "………………………"
+
+[node name="NovelAdvance" type="TextureRect" parent="DialoguePanel/Margin/Content"]
+unique_name_in_owner = true
+offset_left = 1350.0
+offset_top = 180.0
+offset_right = 1410.0
+offset_bottom = 240.0
+scale = Vector2(0.975, 1)
+expand_mode = 1
+
+[node name="NovelAdvanceButton" type="TextureButton" parent="."]
+action_mode = 0
+ignore_texture_size = true
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+focus_mode = 0
+
+[node name="Audio" type="Node" parent="."]
+
+[node name="BgmPlayer" type="AudioStreamPlayer" parent="Audio"]

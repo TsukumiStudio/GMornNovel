@@ -1,0 +1,125 @@
+extends RefCounted
+
+## ノベル台本(Lua風テキスト)の解釈。読み込んだファイルを命令の配列へ直すだけの
+## 純関数。Lua VMではなく、対応する表示命令だけを読む。
+
+
+
+static func convert_rich_text(text: String) -> String:
+	var converted := text.replace("</color>", "[/color]")
+	var color_regex := RegEx.new()
+	color_regex.compile("<color=([^>]+)>")
+	return color_regex.sub(converted, "[color=$1]", true)
+
+static func parse_novel(path: String, resolve_path := Callable(), ignored_speaker := "") -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return result
+	var message_regex := RegEx.new()
+	message_regex.compile('^message\\("((?:[^"\\\\]|\\\\.)*)",\\s*"((?:[^"\\\\]|\\\\.)*)"\\)')
+	var background_regex := RegEx.new()
+	background_regex.compile('^background\\("((?:[^"\\\\]|\\\\.)*)"(?:,\\s*([0-9.]+))?')
+	var load_regex := RegEx.new()
+	load_regex.compile('^chara_load\\("((?:[^"\\\\]|\\\\.)*)",\\s*"((?:[^"\\\\]|\\\\.)*)"(?:,\\s*([0-9.]+))?')
+	var show_regex := RegEx.new()
+	show_regex.compile('^chara_show\\("([^"]+)".*\\{([0-9.]+),\\s*([0-9.]+)\\}(?:,\\s*([0-9.]+))?')
+	var hide_regex := RegEx.new()
+	hide_regex.compile('^chara_hide\\("([^"]+)"')
+	var move_regex := RegEx.new()
+	move_regex.compile('^chara_move\\("([^"]+)".*\\{([0-9.]+),\\s*([0-9.]+)\\}(?:,\\s*([0-9.]+))?')
+	var duration_regex := RegEx.new()
+	duration_regex.compile('^(wait|all_hide)\\(([0-9.]+)')
+	var bubble_regex := RegEx.new()
+	bubble_regex.compile('^bubble_show\\("([^"]+)"')
+	var bubble_hide_regex := RegEx.new()
+	bubble_hide_regex.compile('^bubble_hide\\(')
+	var wait_submit_regex := RegEx.new()
+	wait_submit_regex.compile('^wait_submit\\(')
+	var bgm_regex := RegEx.new()
+	bgm_regex.compile('^bgm\\("((?:[^"\\\\]|\\\\.)*)"(?:,\\s*([0-9.]+))?')
+	var bgm_stop_regex := RegEx.new()
+	bgm_stop_regex.compile('^bgm_stop\\(\\s*([0-9.]*)')
+	var se_regex := RegEx.new()
+	se_regex.compile('^se\\("((?:[^"\\\\]|\\\\.)*)"')
+	var shorts_image_regex := RegEx.new()
+	shorts_image_regex.compile('^shorts_(show|set|pita)\\("((?:[^"\\\\]|\\\\.)*)"')
+	var shorts_zoom_regex := RegEx.new()
+	shorts_zoom_regex.compile('^shorts_zoom\\(([0-9.]+)')
+	var shorts_hide_regex := RegEx.new()
+	shorts_hide_regex.compile('^shorts_hide\\(\\s*([0-9.]*)')
+	while not file.eof_reached():
+		var line := file.get_line().strip_edges()
+		var match_message := message_regex.search(line)
+		if match_message != null:
+			var speaker := match_message.get_string(1)
+			if not ignored_speaker.is_empty() and speaker == ignored_speaker:
+				continue
+			result.append({"kind": "message", "speaker": speaker, "text": match_message.get_string(2).replace("\\n", "\n")})
+			continue
+		var match_background := background_regex.search(line)
+		if match_background != null:
+			var duration := match_background.get_string(2).to_float() if not match_background.get_string(2).is_empty() else 0.0
+			result.append({"kind": "background", "path": _resolve_path(match_background.get_string(1), resolve_path), "duration": duration})
+			continue
+		var match_load := load_regex.search(line)
+		if match_load != null:
+			var scale := match_load.get_string(3).to_float() if not match_load.get_string(3).is_empty() else 1.0
+			result.append({"kind": "load", "name": match_load.get_string(1), "path": _resolve_path(match_load.get_string(2), resolve_path), "scale": scale})
+			continue
+		var match_show := show_regex.search(line)
+		if match_show != null:
+			var duration := match_show.get_string(4).to_float() if not match_show.get_string(4).is_empty() else 0.0
+			result.append({"kind": "show", "name": match_show.get_string(1), "x": match_show.get_string(2).to_float(), "y": match_show.get_string(3).to_float(), "duration": duration})
+			continue
+		var match_hide := hide_regex.search(line)
+		if match_hide != null:
+			result.append({"kind": "hide", "name": match_hide.get_string(1)})
+			continue
+		var match_move := move_regex.search(line)
+		if match_move != null:
+			var duration := match_move.get_string(4).to_float() if not match_move.get_string(4).is_empty() else 0.0
+			result.append({"kind": "move", "name": match_move.get_string(1), "x": match_move.get_string(2).to_float(), "y": match_move.get_string(3).to_float(), "duration": duration})
+			continue
+		var match_duration := duration_regex.search(line)
+		if match_duration != null:
+			result.append({"kind": match_duration.get_string(1), "duration": match_duration.get_string(2).to_float()})
+			continue
+		var match_bubble := bubble_regex.search(line)
+		if match_bubble != null:
+			result.append({"kind": "bubble"})
+			continue
+		if bubble_hide_regex.search(line) != null:
+			result.append({"kind": "bubble_hide"})
+			continue
+		if wait_submit_regex.search(line) != null:
+			result.append({"kind": "wait_submit"})
+			continue
+		var match_bgm := bgm_regex.search(line)
+		if match_bgm != null:
+			var duration := match_bgm.get_string(2).to_float() if not match_bgm.get_string(2).is_empty() else 0.0
+			result.append({"kind": "bgm", "path": _resolve_path(match_bgm.get_string(1), resolve_path), "duration": duration})
+			continue
+		var match_bgm_stop := bgm_stop_regex.search(line)
+		if match_bgm_stop != null:
+			result.append({"kind": "bgm_stop", "duration": match_bgm_stop.get_string(1).to_float()})
+			continue
+		var match_se := se_regex.search(line)
+		if match_se != null:
+			result.append({"kind": "se", "path": _resolve_path(match_se.get_string(1), resolve_path)})
+			continue
+		var match_shorts_image := shorts_image_regex.search(line)
+		if match_shorts_image != null:
+			result.append({"kind": "shorts_" + match_shorts_image.get_string(1), "path": _resolve_path(match_shorts_image.get_string(2), resolve_path)})
+			continue
+		var match_shorts_zoom := shorts_zoom_regex.search(line)
+		if match_shorts_zoom != null:
+			result.append({"kind": "shorts_zoom", "scale": match_shorts_zoom.get_string(1).to_float()})
+			continue
+		var match_shorts_hide := shorts_hide_regex.search(line)
+		if match_shorts_hide != null:
+			result.append({"kind": "shorts_hide"})
+	return result
+
+static func _resolve_path(path: String, resolver: Callable) -> String:
+	return String(resolver.call(path)) if resolver.is_valid() else path
