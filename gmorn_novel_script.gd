@@ -36,6 +36,12 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 	bubble_hide_regex.compile('^bubble_hide\\(')
 	var wait_submit_regex := RegEx.new()
 	wait_submit_regex.compile('^wait_submit\\(')
+	var blackout_regex := RegEx.new()
+	blackout_regex.compile('^blackout\\(')
+	var logo_show_regex := RegEx.new()
+	logo_show_regex.compile('^logo_show\\("((?:[^"\\\\]|\\\\.)*)"\\)')
+	var logo_hide_regex := RegEx.new()
+	logo_hide_regex.compile('^logo_hide\\(')
 	var bgm_regex := RegEx.new()
 	bgm_regex.compile('^bgm\\("((?:[^"\\\\]|\\\\.)*)"(?:,\\s*([0-9.]+))?')
 	var bgm_stop_regex := RegEx.new()
@@ -94,6 +100,16 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 			continue
 		if wait_submit_regex.search(line) != null:
 			result.append({"kind": "wait_submit"})
+			continue
+		if blackout_regex.search(line) != null:
+			result.append({"kind": "blackout"})
+			continue
+		var match_logo_show := logo_show_regex.search(line)
+		if match_logo_show != null:
+			result.append({"kind": "logo_show", "path": _resolve_path(match_logo_show.get_string(1), resolve_path)})
+			continue
+		if logo_hide_regex.search(line) != null:
+			result.append({"kind": "logo_hide"})
 			continue
 		var match_bgm := bgm_regex.search(line)
 		if match_bgm != null:

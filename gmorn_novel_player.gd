@@ -37,6 +37,7 @@ func play_novel(id: String, path: String, completion_action := "") -> void:
 	host.novel_background.modulate.a = 1.0
 	host.novel_background_next.visible = false
 	host.novel_background_next.modulate.a = 1.0
+	host.novel_stage._clear_novel_outro()
 	host.novel_dialogue_panel.visible = true
 	host.novel_dialogue_panel.modulate.a = 1.0
 	host.novel_speaker.text = ""
@@ -82,6 +83,12 @@ func _advance_novel(from_input := false) -> void:
 		elif kind == "all_hide":
 			if host.novel_stage._begin_novel_all_hide(float(command["duration"])):
 				return
+		elif kind == "blackout":
+			host.novel_stage._begin_novel_blackout()
+		elif kind == "logo_show":
+			host.novel_stage._show_novel_logo(String(command["path"]))
+		elif kind == "logo_hide":
+			host.novel_stage._hide_novel_logo()
 		elif kind == "wait":
 			_wait_for_novel_seconds(float(command["duration"]))
 			return

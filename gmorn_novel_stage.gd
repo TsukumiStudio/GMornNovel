@@ -74,6 +74,39 @@ func _zoom_novel_shorts(scale: float) -> void:
 func _hide_novel_shorts() -> void:
 	host.novel_shorts.visible = false
 
+## 台詞・立ち絵を含めて黒幕で覆う。黒幕は通常背景より前に置くので、
+## `background()` だけでは覆えない会話枠まで確実に隠せる。
+func _begin_novel_blackout() -> void:
+	for portrait: NovelPortrait in host.novel_portraits.values():
+		portrait.visible = false
+	host.novel_background.visible = false
+	host.novel_background_next.visible = false
+	host.novel_dialogue_panel.visible = false
+	_clear_novel_shorts()
+	if host.novel_blackout != null:
+		host.novel_blackout.visible = true
+
+## 黒幕の前へ全画面ロゴを出す。存在しない素材は既存の背景命令と同じく警告だけで進める。
+func _show_novel_logo(path: String) -> void:
+	if host.novel_logo == null:
+		push_warning("ノベル: ロゴ表示ノードが無い")
+		return
+	var texture := _load_novel_resource(path, "ロゴ") as Texture2D
+	if texture == null:
+		return
+	host.novel_logo.texture = texture
+	host.novel_logo.visible = true
+
+func _hide_novel_logo() -> void:
+	if host.novel_logo != null:
+		host.novel_logo.visible = false
+
+## 次の台本へ黒幕・ロゴを持ち越さない。
+func _clear_novel_outro() -> void:
+	if host.novel_blackout != null:
+		host.novel_blackout.visible = false
+	_hide_novel_logo()
+
 ## 立ち絵を (x, y) へ出す。置き方は `NovelPortrait.show_at()`。
 ##
 ## 同じ立ち位置に居る別の人物は押し出す（隠す）。左右2枠だった頃は同じ側へ

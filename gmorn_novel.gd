@@ -31,6 +31,8 @@ var visual_clock := 0.0
 @onready var novel_speaker: RichTextLabel = $DialoguePanel/Margin/Content/NovelSpeaker
 @onready var novel_message: RichTextLabel = $DialoguePanel/Margin/Content/NovelMessage
 @onready var novel_advance: TextureRect = $DialoguePanel/Margin/Content/NovelAdvance
+@onready var novel_blackout: ColorRect = get_node_or_null("NovelBlackout") as ColorRect
+@onready var novel_logo: TextureRect = get_node_or_null("OpeningLogo") as TextureRect
 
 var novel_player: RefCounted
 var novel_stage: RefCounted
@@ -66,6 +68,10 @@ func _ready() -> void:
 		representative_portrait.queue_free()
 	novel_background_next.visible = false
 	novel_shorts.visible = false
+	if novel_blackout != null:
+		novel_blackout.visible = false
+	if novel_logo != null:
+		novel_logo.visible = false
 	# GMornButtonを使う場合も、クリック音はノベルだけが決める。
 	var button := $NovelAdvanceButton as BaseButton
 	if "play_submit_sound" in button:
