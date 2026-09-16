@@ -83,6 +83,7 @@ func _begin_novel_blackout() -> void:
 	host.novel_background.visible = false
 	host.novel_background_next.visible = false
 	host.novel_dialogue_panel.visible = false
+	host.novel_dialogue_intentionally_hidden = true
 	_clear_novel_shorts()
 	if host.novel_blackout != null:
 		host.novel_blackout.visible = true
@@ -198,6 +199,7 @@ func _begin_novel_all_hide(duration: float) -> bool:
 		host.novel_background.visible = false
 		host.novel_background_next.visible = false
 		host.novel_dialogue_panel.visible = false
+		host.novel_dialogue_intentionally_hidden = true
 		return false
 	var tween := host.create_tween().set_parallel(true)
 	for portrait: NovelPortrait in host.novel_portraits.values():
@@ -217,6 +219,7 @@ func _begin_novel_all_hide(duration: float) -> bool:
 func _show_novel_bubble() -> void:
 	host.novel_dialogue_panel.visible = true
 	host.novel_dialogue_panel.modulate.a = 1.0
+	host.novel_dialogue_intentionally_hidden = false
 	host.novel_speaker.text = ""
 	host.novel_message.text = ""
 

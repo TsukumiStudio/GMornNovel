@@ -66,6 +66,8 @@ var novel_generation := 0
 var novel_completion_action := ""
 ## 現在の台本が、最初に見せる絵を準備し終えたか。
 var initial_visual_prepared := false
+## `all_hide` / `blackout` により会話枠を意図して隠しているか。
+var novel_dialogue_intentionally_hidden := false
 
 func _ready() -> void:
 	# Editor用の代表立ち絵は、台本の人物辞書や表示制御へ混ぜない。

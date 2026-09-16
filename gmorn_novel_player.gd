@@ -29,6 +29,7 @@ func play_novel(id: String, path: String, completion_action := "") -> void:
 	host.novel_bgm_touched = false
 	host.novel_bgm_before = null
 	host.initial_visual_prepared = false
+	host.novel_dialogue_intentionally_hidden = false
 	host.visible = true
 	# 背景は空から始める。前の物語の最後の絵を残すと、次の物語の最初の
 	# `background` が淡入する0.3秒のあいだ、前の絵が透けて見える。元版も再生の
@@ -118,7 +119,8 @@ func _advance_novel(from_input := false) -> void:
 			# 枠が無いと台詞が見えない。元版は枠が無ければ台詞ごと飛ばす（警告だけ残す）
 			# が、遊ぶ側からは台詞が消えたようにしか見えないので、枠を出し直して見せる。
 			if not host.novel_dialogue_panel.visible or host.novel_dialogue_panel.modulate.a < 1.0:
-				push_warning("ノベル: 吹き出しを出さずに台詞が来た。出し直す（%s）" % host.novel_id)
+				if not host.novel_dialogue_intentionally_hidden:
+					push_warning("ノベル: 吹き出しを出さずに台詞が来た。出し直す（%s）" % host.novel_id)
 				host.novel_stage._show_novel_bubble()
 			host.novel_speaker.text = String(command["speaker"])
 			host.novel_message.text = NovelScript.convert_rich_text(String(command["text"]))
