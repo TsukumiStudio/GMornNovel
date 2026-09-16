@@ -19,6 +19,8 @@ const Parser := preload("gmorn_novel_script.gd")
 @export var bgm_volume_db := 0.0
 @export var se_volume_db := 0.0
 var script_loader: Callable = Parser.parse_novel
+## 利用側固有の待機命令。trueを返すと、利用側が明示的に進行を再開するまで止まる。
+var tutorial_handler: Callable
 var visual_clock := 0.0
 
 
