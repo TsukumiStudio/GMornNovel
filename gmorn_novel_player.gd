@@ -28,6 +28,7 @@ func play_novel(id: String, path: String, completion_action := "") -> void:
 	host.novel_submit_waiting = false
 	host.novel_bgm_touched = false
 	host.novel_bgm_before = null
+	host.initial_visual_prepared = false
 	host.visible = true
 	# 背景は空から始める。前の物語の最後の絵を残すと、次の物語の最初の
 	# `background` が淡入する0.3秒のあいだ、前の絵が透けて見える。元版も再生の
@@ -122,8 +123,10 @@ func _advance_novel(from_input := false) -> void:
 			host.novel_speaker.text = String(command["speaker"])
 			host.novel_message.text = NovelScript.convert_rich_text(String(command["text"]))
 			host.novel_stage._focus_novel_speaker(String(command["speaker"]))
+			host._mark_initial_visual_ready()
 			_begin_novel_reveal()
 			return
+	host._mark_initial_visual_ready()
 	_finish_novel()
 
 ## 台詞を1文字ずつ出し始める。

@@ -67,6 +67,7 @@ func _show_novel_shorts(path: String) -> void:
 	host.novel_shorts.texture = texture
 	host.novel_shorts.scale = Vector2.ONE
 	host.novel_shorts.visible = true
+	host._mark_initial_visual_ready()
 
 func _zoom_novel_shorts(scale: float) -> void:
 	host.novel_shorts.scale = Vector2.ONE * scale
@@ -185,6 +186,7 @@ func _settle_novel_background(texture: Texture2D) -> void:
 	host.novel_background.visible = true
 	host.novel_background.modulate.a = 1.0
 	host.novel_background_next.visible = false
+	host._mark_initial_visual_ready()
 
 ## 立ち絵・背景・吹き出しをまとめて消す。`duration` が0より大きければ淡出し、
 ## 消え切るまで待つ（真を返す）。0なら即座に伏せる。元版は0でも背景を伏せる。

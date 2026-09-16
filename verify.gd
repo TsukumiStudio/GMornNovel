@@ -43,7 +43,12 @@ func _run() -> void:
 	view.sound_requested.connect(func(stream: AudioStream) -> void: sounds.append(stream))
 	var completions: Array[String] = []
 	view.finished.connect(func(id: String, context: String) -> void: completions.append(id + context))
+	var initial_visual_count := [0]
+	view.initial_visual_ready.connect(func() -> void: initial_visual_count[0] += 1)
 	view.play_novel("story", "res://story.lua", "done")
+	assert(await view.wait_for_initial_visual(), "最初の背景の準備を待てない")
+	assert(initial_visual_count[0] == 1 and view.novel_background.texture != null,
+		"最初の背景の準備完了を一度だけ知らせない")
 	var deadline := Time.get_ticks_msec() + 2000
 	while view.novel_waiting and Time.get_ticks_msec() < deadline:
 		await process_frame

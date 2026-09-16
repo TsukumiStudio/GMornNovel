@@ -5,6 +5,8 @@ extends Control
 
 signal finished(id: String, completion_action: String)
 signal sound_requested(stream: AudioStream)
+## 最初の背景または台詞を表示できる状態になった。暗転遷移の明転待ちに使う。
+signal initial_visual_ready
 
 const Player := preload("gmorn_novel_player.gd")
 const Stage := preload("gmorn_novel_stage.gd")
@@ -62,6 +64,8 @@ var last_novel_bgm_stop_fade := -1.0
 var novel_revealed := 0.0
 var novel_generation := 0
 var novel_completion_action := ""
+## 現在の台本が、最初に見せる絵を準備し終えたか。
+var initial_visual_prepared := false
 
 func _ready() -> void:
 	# Editor用の代表立ち絵は、台本の人物辞書や表示制御へ混ぜない。
@@ -96,6 +100,20 @@ func _process(delta: float) -> void:
 
 func play_novel(id: String, path: String, completion_action := "") -> void:
 	novel_player.play_novel(id, path, completion_action)
+
+## 最初の背景クロスフェードまで待つ。背景無しの台本は最初の台詞を準備した時点で
+## 済む。中断・別台本への差し替え時は false を返す。
+func wait_for_initial_visual() -> bool:
+	var generation := novel_generation
+	while is_inside_tree() and visible and generation == novel_generation and not initial_visual_prepared:
+		await get_tree().process_frame
+	return is_inside_tree() and visible and generation == novel_generation and initial_visual_prepared
+
+func _mark_initial_visual_ready() -> void:
+	if initial_visual_prepared:
+		return
+	initial_visual_prepared = true
+	initial_visual_ready.emit()
 
 func advance() -> void:
 	novel_player._advance_novel(true)
