@@ -37,7 +37,9 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 	var wait_submit_regex := RegEx.new()
 	wait_submit_regex.compile('^wait_submit\\(')
 	var tutorial_regex := RegEx.new()
-	tutorial_regex.compile('^exec_tutorial\\(\\s*([0-9]+)\\s*\\)')
+	tutorial_regex.compile('^start_tutorial\\(\\s*"([^"]+)"\\s*,\\s*(?:"([^"]+)"|([0-9]+))\\s*\\)')
+	var legacy_tutorial_regex := RegEx.new()
+	legacy_tutorial_regex.compile('^exec_tutorial\\(\\s*([0-9]+)\\s*\\)')
 	var blackout_regex := RegEx.new()
 	blackout_regex.compile('^blackout\\(')
 	var logo_show_regex := RegEx.new()
@@ -105,7 +107,15 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 			continue
 		var match_tutorial := tutorial_regex.search(line)
 		if match_tutorial != null:
-			result.append({"kind": "tutorial", "target": match_tutorial.get_string(1).to_int()})
+			var argument: Variant = match_tutorial.get_string(2)
+			if argument.is_empty():
+				argument = match_tutorial.get_string(3).to_int()
+			result.append({"kind": "tutorial", "tutorial": match_tutorial.get_string(1), "argument": argument})
+			continue
+		var legacy_tutorial := legacy_tutorial_regex.search(line)
+		if legacy_tutorial != null:
+			# 既存台本との互換。新規台本は用途を明示する start_tutorial を使う。
+			result.append({"kind": "tutorial", "tutorial": "fruit_press", "argument": legacy_tutorial.get_string(1).to_int()})
 			continue
 		if blackout_regex.search(line) != null:
 			result.append({"kind": "blackout"})

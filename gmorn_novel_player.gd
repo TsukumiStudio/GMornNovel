@@ -99,7 +99,7 @@ func _advance_novel(from_input := false) -> void:
 			host.novel_submit_waiting = true
 			return
 		elif kind == "tutorial":
-			if host.tutorial_handler.is_valid() and host.tutorial_handler.call(int(command["target"])):
+			if host.tutorial_handler.is_valid() and host.tutorial_handler.call(command):
 				return
 		elif kind == "bgm":
 			if host.novel_audio._begin_novel_bgm(String(command["path"]), float(command["duration"])):
