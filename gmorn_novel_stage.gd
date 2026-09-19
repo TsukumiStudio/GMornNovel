@@ -107,9 +107,8 @@ func _clear_novel_outro() -> void:
 
 ## 立ち絵を (x, y) へ出す。置き方は `NovelPortrait.show_at()`。
 ##
-## 人物ごとに独立して表示する。同じ座標へ別の人物を出しても、先に出ている
-## 人物は隠さない。話者名ごとに立ち絵を1枚だけ保持するため、同じ人物の
-## 重複表示を判定する必要はない。
+## 人物ごとに独立して表示する。ただし別の人物を**完全に同じ座標**へ出す場合は、
+## 先に居た人物を隠して入れ替える。近接した座標は別の立ち位置として併存する。
 
 func _show_novel_character(character_name: String, position_x: float, position_y: float, duration: float) -> void:
 	if not host.novel_portraits.has(character_name):
@@ -119,6 +118,10 @@ func _show_novel_character(character_name: String, position_x: float, position_y
 	if portrait.texture == null:
 		push_warning("ノベル: 絵の無い立ち絵を出そうとした（%s）" % character_name)
 		return
+	var spot := Vector2(position_x, position_y)
+	for other: NovelPortrait in host.novel_portraits.values():
+		if other != portrait and other.visible and other.normalized == spot:
+			other.visible = false
 	portrait.show_at(position_x, position_y, duration)
 
 ## 立ち絵を (x, y) へ動かす。補間は `NovelPortrait.move_to()`。待たない。
