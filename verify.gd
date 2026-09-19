@@ -74,6 +74,28 @@ func _run() -> void:
 	assert(completions == ["storydone"] and not view.visible, "読了通知か画面の終了が違う")
 	assert(not view.novel_shorts.visible and not view.novel_background.visible, "非表示命令を落とした")
 
+	# 表示名を変えても同じIDの立ち絵を使い、画像差替え後も名前を保つ。
+	_write("res://names.lua", '\n'.join([
+		'chara_load("friend", "res://texture.tres", 1)',
+		'chara_show("friend", {0.5, 0.5}, 0)',
+		'chara_name("friend", "???")',
+		'message("friend", "はじめまして")',
+		'chara_name("friend", "友人")',
+		'chara_load("friend", "res://texture.tres", 1)',
+		'message("friend", "名乗ったあと")',
+	]))
+	assert(Parser.parse_novel("res://names.lua").size() == 7)
+	view.play_novel("names", "res://names.lua")
+	var friend = view.novel_portraits["friend"]
+	assert(view.novel_speaker.text == "???" and friend.focused)
+	view.reveal_all()
+	view.advance()
+	assert(view.novel_speaker.text == "友人" and view.novel_speaker_id == "friend")
+	assert(view.novel_portraits.size() == 1 and view.novel_portraits["friend"] == friend)
+	_write("res://name_reset.lua", 'message("friend", "次の話")')
+	view.play_novel("reset", "res://name_reset.lua")
+	assert(view.novel_speaker.text == "friend" and view.novel_display_names.is_empty())
+
 	# 同じViewで再生を差し替えても、古いwait/tweenが新しい本文を書き換えない。
 	_write("res://waiting.lua", 'wait(0.05)\nmessage("古い", "古い文章")')
 	_write("res://fading.lua", 'background("res://texture.tres", 0.05)\nmessage("古い", "古い文章")')
@@ -101,7 +123,7 @@ func _run() -> void:
 	OS.unset_environment("GMORN_NOVEL_CHARACTER_SOUND_INTERVAL")
 	view.queue_free()
 	await process_frame
-	print("GMORN NOVEL VERIFY: PASS (17 commands, audio, input, cancellation, settings)")
+	print("GMORN NOVEL VERIFY: PASS (commands, character IDs, audio, input, cancellation, settings)")
 	quit()
 
 func _write(path: String, text: String) -> void:

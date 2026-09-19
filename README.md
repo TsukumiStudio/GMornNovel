@@ -20,7 +20,7 @@ Godotのノベル再生アドオン。Lua風の台本を読み、文字送り・
 - BGMの淡入・淡出、重ねて鳴らせる単発SE、画像の表示・拡大
 - 時間待ち、入力待ち、読了通知、中断後の古い非同期処理の破棄
 
-立ち絵は話者名ごとに独立して表示する。別の人物を近い座標へ出しても、すでに
+立ち絵はキャラIDごとに独立して表示し、台詞の表示名とは分離する。別の人物を近い座標へ出しても、すでに
 表示している人物を自動では隠さない。ただし完全に同じ座標へ出す場合は先の人物を
 隠して入れ替える。台詞の話者は、その都度ほかの立ち絵より前面へ表示する。
 - エディターの事前スキャンが不要な相対preload。配置先のフォルダー名は自由
@@ -65,7 +65,7 @@ all_hide(0.2)
 
 Lua VMではなく、1行ずつ表示命令を読む。変数、条件分岐、関数定義は実行しない。
 文字列は二重引用符、座標や秒数は非負の数値リテラルで指定する。
-対応命令は `message`、`background`、`chara_load/show/move/hide`、
+対応命令は `message`、`background`、`chara_load/show/move/hide/name`、
 `bubble_show/hide`、`wait`、`wait_submit`、`start_tutorial("種類", 引数)`、`all_hide`、`bgm`、`bgm_stop`、`se`、
 `shorts_show/set/pita/zoom/hide`。`bubble_show` の引数は互換用で、枠の差し替えには使わない。
 `chara_show/move` は演出途中でも次の命令へ進む。
@@ -75,6 +75,21 @@ Lua VMではなく、1行ずつ表示命令を読む。変数、条件分岐、�
 `start_tutorial("fruit_press", 個数)` として読み替える互換入力であり、新規台本には使わない。
 
 台本は実行時にファイルとして読むため、エクスポート設定の非リソースファイル対象に `*.lua` を含める。
+
+### キャラIDと表示名
+
+`message` と `chara_*` の第1引数は同じキャラIDを使う。`chara_name(ID, 表示名)` は以後の名前欄だけを変え、立ち絵の強調・前面表示・移動・非表示には影響しない。
+
+```lua
+chara_load("friend", "res://friends/normal.png", 1)
+chara_name("friend", "???")
+chara_show("friend", {0.3, 0.35}, 0.3)
+message("friend", "はじめまして")
+chara_name("friend", "友人")
+message("friend", "名前を紹介した後の台詞")
+```
+
+表示名の変更は画像差替え後も保ち、`play_novel()` のたびにリセットする。保存には関与しない。変更がなければ `message` 命令Dictionaryの `display_name` を使い、省略時はIDそのものを表示する。このため従来の日本語名指定もそのまま動く。既定表示名・旧名のID変換は利用側の `script_loader` で付与し、共通アドオンに作品固有の人物名は置かない。現在の発話者IDは `novel_speaker_id`、立ち絵のIDは `character_id` で取得できる。
 
 ## 3. 入力とライフサイクル
 

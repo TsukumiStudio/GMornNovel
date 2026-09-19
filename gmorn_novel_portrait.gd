@@ -1,6 +1,6 @@
 extends TextureRect
 
-## ノベルの立ち絵1枚。話者名ごとに1つ作る（`gmorn_novel_portrait.tscn`）。
+## ノベルの立ち絵1枚。キャラIDごとに1つ作る（`gmorn_novel_portrait.tscn`）。
 ##
 ## 元版（`MornLuaNovelPortraitView`）は話者名で初めて呼ばれた瞬間に Image を作り、
 ## 0〜1 の正規化座標で自由に置く。左右2枠へ振り分けていた頃は x=0.5 が右へ寄り、
@@ -26,7 +26,8 @@ const UNFOCUS_TONE := 0.55
 ## 目標へ寄る速さ。元版 `_lerpSpeed` 12。
 const LERP_SPEED := 12.0
 
-var speaker_name := ""
+## 表示名から独立した識別子。表示名の変更で立ち絵の同一性を失わない。
+var character_id := ""
 ## 台本が指定した正規化座標。
 var normalized := Vector2.ZERO
 ## 正規化座標から決めた中心（px）。話者の上下は含まない。
@@ -40,9 +41,9 @@ var target_tone := 1.0
 var fade_tween: Tween
 var move_tween: Tween
 
-## 絵と倍率を入れる。`chara_load` のたびに呼ばれ、同じ名前なら絵が入れ替わる。
+## 絵と倍率を入れる。`chara_load` のたびに呼ばれ、同じIDなら絵が入れ替わる。
 func setup(name_in: String, texture_in: Texture2D, scale_in: float) -> void:
-	speaker_name = name_in
+	character_id = name_in
 	texture = texture_in
 	if texture_in != null:
 		size = texture_in.get_size() * scale_in

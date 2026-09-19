@@ -45,9 +45,11 @@ var novel_audio: RefCounted
 var novel_commands: Array[Dictionary] = []
 var novel_index := 0
 var novel_characters: Dictionary = {}
-## 話者名 → 立ち絵（`NovelPortrait`）。`chara_load` で初めて名前が出た順に並ぶので、
-## 後から出た名前ほど手前に描かれる（元版と同じ。話者を手前へ出すことはしない）。
+## キャラID → 立ち絵（`NovelPortrait`）。発話時は同じIDの立ち絵を手前へ出す。
 var novel_portraits: Dictionary = {}
+## 台本内だけで有効なIDごとの表示名。次の再生開始時にリセットする。
+var novel_display_names: Dictionary = {}
+var novel_speaker_id := ""
 var novel_id := ""
 var novel_waiting := false
 ## `wait_submit` で押されるのを待っているか。検査が読む。

@@ -20,6 +20,8 @@ func play_novel(id: String, path: String, completion_action := "") -> void:
 	host.novel_commands = host.script_loader.call(path)
 	host.novel_index = 0
 	host.novel_characters.clear()
+	host.novel_display_names.clear()
+	host.novel_speaker_id = ""
 	host.novel_stage._clear_novel_portraits()
 	host.novel_stage._clear_novel_shorts()
 	host.novel_id = id
@@ -70,6 +72,11 @@ func _advance_novel(from_input := false) -> void:
 		if kind == "background":
 			if host.novel_stage._begin_novel_background(String(command["path"]), float(command["duration"])):
 				return
+		elif kind == "character_name":
+			var character_id := String(command["name"])
+			host.novel_display_names[character_id] = String(command["display_name"])
+			if host.novel_speaker_id == character_id:
+				host.novel_speaker.text = String(command["display_name"])
 		elif kind == "load":
 			host.novel_stage._load_novel_character(String(command["name"]), String(command["path"]), float(command["scale"]))
 		elif kind == "show":
@@ -122,9 +129,11 @@ func _advance_novel(from_input := false) -> void:
 				if not host.novel_dialogue_intentionally_hidden:
 					push_warning("ノベル: 吹き出しを出さずに台詞が来た。出し直す（%s）" % host.novel_id)
 				host.novel_stage._show_novel_bubble()
-			host.novel_speaker.text = String(command["speaker"])
+			host.novel_speaker_id = String(command["speaker"])
+			host.novel_speaker.text = String(host.novel_display_names.get(
+				host.novel_speaker_id, command.get("display_name", host.novel_speaker_id)))
 			host.novel_message.text = NovelScript.convert_rich_text(String(command["text"]))
-			host.novel_stage._focus_novel_speaker(String(command["speaker"]))
+			host.novel_stage._focus_novel_speaker(host.novel_speaker_id)
 			host._mark_initial_visual_ready()
 			_begin_novel_reveal()
 			return

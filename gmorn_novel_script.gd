@@ -21,6 +21,8 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 	var background_regex := RegEx.new()
 	background_regex.compile('^background\\("((?:[^"\\\\]|\\\\.)*)"(?:,\\s*([0-9.]+))?')
 	var load_regex := RegEx.new()
+	var name_regex := RegEx.new()
+	name_regex.compile('^chara_name\\("((?:[^"\\\\]|\\\\.)*)",\\s*"((?:[^"\\\\]|\\\\.)*)"\\)')
 	load_regex.compile('^chara_load\\("((?:[^"\\\\]|\\\\.)*)",\\s*"((?:[^"\\\\]|\\\\.)*)"(?:,\\s*([0-9.]+))?')
 	var show_regex := RegEx.new()
 	show_regex.compile('^chara_show\\("([^"]+)".*\\{([0-9.]+),\\s*([0-9.]+)\\}(?:,\\s*([0-9.]+))?')
@@ -73,6 +75,10 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 			result.append({"kind": "background", "path": _resolve_path(match_background.get_string(1), resolve_path), "duration": duration})
 			continue
 		var match_load := load_regex.search(line)
+		var match_name := name_regex.search(line)
+		if match_name != null:
+			result.append({"kind": "character_name", "name": match_name.get_string(1), "display_name": match_name.get_string(2)})
+			continue
 		if match_load != null:
 			var scale := match_load.get_string(3).to_float() if not match_load.get_string(3).is_empty() else 1.0
 			result.append({"kind": "load", "name": match_load.get_string(1), "path": _resolve_path(match_load.get_string(2), resolve_path), "scale": scale})
