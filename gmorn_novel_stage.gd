@@ -25,8 +25,8 @@ func _load_novel_resource(path: String, what: String) -> Resource:
 
 ## 名前の立ち絵。無ければ作って置き場の末尾へ足す。
 ##
-## 元版は話者名で初めて呼ばれた瞬間に Image を作り、以後は並べ替えない。
-## 後から出た名前ほど手前に描かれ、話者を手前へ出すことはしない。同じにする。
+## 話者名で初めて呼ばれた瞬間に Image を作る。話す人物は台詞ごとに最前面へ
+## 並べ替えるので、重なった場合も話者が見える。
 
 func _novel_portrait_for(character_name: String) -> NovelPortrait:
 	if host.novel_portraits.has(character_name):
@@ -147,6 +147,11 @@ func _hide_novel_character(character_name: String) -> void:
 func _focus_novel_speaker(character_name: String) -> void:
 	for portrait: NovelPortrait in host.novel_portraits.values():
 		portrait.set_focused(character_name.is_empty() or portrait.speaker_name == character_name)
+	if character_name.is_empty() or not host.novel_portraits.has(character_name):
+		return
+	var speaker: NovelPortrait = host.novel_portraits[character_name]
+	if speaker.visible and is_instance_valid(host.novel_portrait_host):
+		host.novel_portrait_host.move_child(speaker, host.novel_portrait_host.get_child_count() - 1)
 
 ## 背景を差し替える。`duration` が0より大きければ2枚目を淡く重ね、終わるまで待つ
 ## （真を返す）。

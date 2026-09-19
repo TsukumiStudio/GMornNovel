@@ -27,7 +27,7 @@ const UNFOCUS_TONE := 0.55
 const LERP_SPEED := 12.0
 
 var speaker_name := ""
-## 台本が指定した正規化座標。同じ立ち位置へ別の人物が出たかの判定に使う。
+## 台本が指定した正規化座標。
 var normalized := Vector2.ZERO
 ## 正規化座標から決めた中心（px）。話者の上下は含まない。
 var base_center := Vector2.ZERO
