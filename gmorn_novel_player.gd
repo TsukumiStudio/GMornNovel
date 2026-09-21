@@ -114,6 +114,9 @@ func _advance_novel(from_input := false) -> void:
 		elif kind == "bgm_stop":
 			if host.novel_audio._begin_novel_bgm_stop(float(command["duration"])):
 				return
+		elif kind == "bgm_mute":
+			if host.novel_audio._begin_novel_bgm_mute(float(command["duration"])):
+				return
 		elif kind == "se":
 			host.novel_audio._play_novel_se(String(command["path"]))
 		elif kind == "shorts_show" or kind == "shorts_set" or kind == "shorts_pita":

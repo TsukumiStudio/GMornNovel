@@ -66,7 +66,7 @@ all_hide(0.2)
 Lua VMではなく、1行ずつ表示命令を読む。変数、条件分岐、関数定義は実行しない。
 文字列は二重引用符、座標や秒数は非負の数値リテラルで指定する。
 対応命令は `message`、`background`、`chara_load/show/move/hide/name`、
-`bubble_show/hide`、`wait`、`wait_submit`、`start_tutorial("種類", 引数)`、`all_hide`、`bgm`、`bgm_stop`、`se`、
+`bubble_show/hide`、`wait`、`wait_submit`、`start_tutorial("種類", 引数)`、`all_hide`、`bgm`、`bgm_stop`、`bgm_mute`、`se`、
 `shorts_show/set/pita/zoom/hide`。`bubble_show` の引数は互換用で、枠の差し替えには使わない。
 `chara_show/move` は演出途中でも次の命令へ進む。
 `start_tutorial` は利用側が `tutorial_handler` を設定した場合だけ待機命令として扱う。handlerには

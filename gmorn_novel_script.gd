@@ -52,6 +52,8 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 	bgm_regex.compile('^bgm\\("((?:[^"\\\\]|\\\\.)*)"(?:,\\s*([0-9.]+))?')
 	var bgm_stop_regex := RegEx.new()
 	bgm_stop_regex.compile('^bgm_stop\\(\\s*([0-9.]*)')
+	var bgm_mute_regex := RegEx.new()
+	bgm_mute_regex.compile('^bgm_mute\\(\\s*([0-9.]*)')
 	var stream_start_regex := RegEx.new()
 	stream_start_regex.compile('^piita_stream_start\\(\\)')
 	var se_regex := RegEx.new()
@@ -143,6 +145,10 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 		var match_bgm_stop := bgm_stop_regex.search(line)
 		if match_bgm_stop != null:
 			result.append({"kind": "bgm_stop", "duration": match_bgm_stop.get_string(1).to_float()})
+			continue
+		var match_bgm_mute := bgm_mute_regex.search(line)
+		if match_bgm_mute != null:
+			result.append({"kind": "bgm_mute", "duration": match_bgm_mute.get_string(1).to_float()})
 			continue
 		if stream_start_regex.search(line) != null:
 			result.append({"kind": "stream_start", "stream": "piita"})
