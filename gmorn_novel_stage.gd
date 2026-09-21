@@ -1,11 +1,15 @@
 extends RefCounted
 
 const NovelPortrait := preload("gmorn_novel_portrait.gd")
+const SHORTS_PHONE_HIDDEN_OFFSET_Y := 1080.0
 var host: Control
 const SHORTS_TRANSITION_DURATION := 0.28
 var shorts_tween: Tween
 
 func _shorts_track() -> Control:
+	var track := host.novel_shorts.get_node_or_null("Screen/Track") as Control
+	if track != null:
+		return track
 	return host.novel_shorts.get_node_or_null("Track") as Control
 
 
@@ -72,6 +76,7 @@ func _clear_novel_shorts() -> void:
 	next.texture = null
 	track.position = Vector2.ZERO
 	track.scale = Vector2.ONE
+	host.novel_shorts.position.y = 0.0
 	host.novel_shorts.visible = false
 
 func _show_novel_shorts(path: String) -> void:
@@ -93,10 +98,11 @@ func _show_novel_shorts(path: String) -> void:
 	if current.texture == null:
 		current.texture = texture
 		next.texture = null
-		track.position.y = track.size.y
+		track.position = Vector2.ZERO
+		host.novel_shorts.position.y = SHORTS_PHONE_HIDDEN_OFFSET_Y
 		host.novel_shorts.visible = true
 		shorts_tween = host.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		shorts_tween.tween_property(track, "position:y", 0.0, SHORTS_TRANSITION_DURATION)
+		shorts_tween.tween_property(host.novel_shorts, "position:y", 0.0, SHORTS_TRANSITION_DURATION)
 	else:
 		next.texture = texture
 		next.position.y = track.size.y
@@ -128,11 +134,12 @@ func _hide_novel_shorts() -> void:
 	if shorts_tween != null and shorts_tween.is_valid():
 		shorts_tween.kill()
 	shorts_tween = host.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	shorts_tween.tween_property(track, "position:y", -track.size.y, SHORTS_TRANSITION_DURATION)
+	shorts_tween.tween_property(host.novel_shorts, "position:y", SHORTS_PHONE_HIDDEN_OFFSET_Y, SHORTS_TRANSITION_DURATION)
 	shorts_tween.tween_callback(func() -> void:
 		host.novel_shorts.visible = false
 		track.position = Vector2.ZERO
 		track.scale = Vector2.ONE
+		host.novel_shorts.position.y = 0.0
 	)
 
 ## 台詞・立ち絵を含めて黒幕で覆う。黒幕は通常背景より前に置くので、
