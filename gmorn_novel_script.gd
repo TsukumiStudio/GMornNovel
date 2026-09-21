@@ -64,8 +64,27 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 	shorts_zoom_regex.compile('^shorts_zoom\\(([0-9.]+)')
 	var shorts_hide_regex := RegEx.new()
 	shorts_hide_regex.compile('^shorts_hide\\(\\s*([0-9.]*)')
+	var in_block_comment := false
 	while not file.eof_reached():
 		var line := file.get_line().strip_edges()
+		# Luaの複数行コメントは、この簡易パーサーでも状態を跨いで無視する。
+		# 閉じた後ろに命令が続く書式も残りの文字列を同じ行として解析する。
+		if in_block_comment:
+			var comment_end := line.find("]]" )
+			if comment_end < 0:
+				continue
+			in_block_comment = false
+			line = line.substr(comment_end + 2).strip_edges()
+			if line.is_empty():
+				continue
+		if line.begins_with("--[["):
+			var inline_end := line.find("]]", 4)
+			if inline_end < 0:
+				in_block_comment = true
+				continue
+			line = line.substr(inline_end + 2).strip_edges()
+			if line.is_empty():
+				continue
 		var match_message := message_regex.search(line)
 		if match_message != null:
 			var speaker := match_message.get_string(1)
