@@ -2,6 +2,11 @@ extends RefCounted
 
 const NovelPortrait := preload("gmorn_novel_portrait.gd")
 var host: Control
+const SHORTS_TRANSITION_DURATION := 0.28
+var shorts_tween: Tween
+
+func _shorts_track() -> Control:
+	return host.novel_shorts.get_node_or_null("Track") as Control
 
 
 func _init(main: Control) -> void:
@@ -52,24 +57,83 @@ func _clear_novel_portraits() -> void:
 		child.queue_free()
 
 func _clear_novel_shorts() -> void:
-	host.novel_shorts.texture = null
-	host.novel_shorts.scale = Vector2.ONE
+	var track := _shorts_track()
+	if track == null:
+		(host.novel_shorts as TextureRect).texture = null
+		host.novel_shorts.scale = Vector2.ONE
+		host.novel_shorts.visible = false
+		return
+	if shorts_tween != null and shorts_tween.is_valid():
+		shorts_tween.kill()
+	track = _shorts_track()
+	var current := track.get_node("Current") as TextureRect
+	var next := track.get_node("Next") as TextureRect
+	current.texture = null
+	next.texture = null
+	track.position = Vector2.ZERO
+	track.scale = Vector2.ONE
 	host.novel_shorts.visible = false
 
 func _show_novel_shorts(path: String) -> void:
 	var texture := _load_novel_resource(path, "ショート動画") as Texture2D
 	if texture == null:
 		return
-	host.novel_shorts.texture = texture
-	host.novel_shorts.scale = Vector2.ONE
-	host.novel_shorts.visible = true
+	var track := _shorts_track()
+	if track == null:
+		(host.novel_shorts as TextureRect).texture = texture
+		host.novel_shorts.scale = Vector2.ONE
+		host.novel_shorts.visible = true
+		host._mark_initial_visual_ready()
+		return
+	var current := track.get_node("Current") as TextureRect
+	var next := track.get_node("Next") as TextureRect
+	if shorts_tween != null and shorts_tween.is_valid():
+		shorts_tween.kill()
+	track.scale = Vector2.ONE
+	if current.texture == null:
+		current.texture = texture
+		next.texture = null
+		track.position.y = track.size.y
+		host.novel_shorts.visible = true
+		shorts_tween = host.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		shorts_tween.tween_property(track, "position:y", 0.0, SHORTS_TRANSITION_DURATION)
+	else:
+		next.texture = texture
+		next.position.y = track.size.y
+		host.novel_shorts.visible = true
+		shorts_tween = host.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+		shorts_tween.set_parallel(true)
+		shorts_tween.tween_property(current, "position:y", -track.size.y, SHORTS_TRANSITION_DURATION)
+		shorts_tween.tween_property(next, "position:y", 0.0, SHORTS_TRANSITION_DURATION)
+		shorts_tween.chain().tween_callback(func() -> void:
+			current.texture = next.texture
+			current.position = Vector2.ZERO
+			next.texture = null
+			next.position = Vector2.ZERO
+		)
 	host._mark_initial_visual_ready()
 
 func _zoom_novel_shorts(scale: float) -> void:
-	host.novel_shorts.scale = Vector2.ONE * scale
+	var track := _shorts_track()
+	if track == null:
+		host.novel_shorts.scale = Vector2.ONE * scale
+		return
+	track.scale = Vector2.ONE * scale
 
 func _hide_novel_shorts() -> void:
-	host.novel_shorts.visible = false
+	var track := _shorts_track()
+	if track == null:
+		host.novel_shorts.visible = false
+		return
+	if shorts_tween != null and shorts_tween.is_valid():
+		shorts_tween.kill()
+	shorts_tween = host.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	shorts_tween.tween_property(track, "position:y", -track.size.y, SHORTS_TRANSITION_DURATION)
+	shorts_tween.tween_callback(func() -> void:
+		host.novel_shorts.visible = false
+		track.position = Vector2.ZERO
+		track.scale = Vector2.ONE
+	)
 
 ## 台詞・立ち絵を含めて黒幕で覆う。黒幕は通常背景より前に置くので、
 ## `background()` だけでは覆えない会話枠まで確実に隠せる。
