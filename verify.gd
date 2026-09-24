@@ -96,6 +96,24 @@ func _run() -> void:
 	view.play_novel("reset", "res://name_reset.lua")
 	assert(view.novel_speaker.text == "friend" and view.novel_display_names.is_empty())
 
+	# フェードの完了前には次の命令へ進まず、中断した再生を再開しない。
+	_write("res://fade.lua", 'fade_out(0.02)\nfade_in(0.02)\nmessage("完了", "明転後")')
+	assert(Parser.parse_novel("res://fade.lua").size() == 3)
+	var fades: Array[String] = []
+	view.fade_handler = func(kind: String, duration: float) -> void:
+		fades.append(kind)
+		await create_timer(duration).timeout
+	view.play_novel("fade", "res://fade.lua")
+	assert(view.novel_waiting and fades == ["fade_out"])
+	view.advance()
+	assert(fades == ["fade_out"], "入力でフェード待機を飛ばした")
+	await create_timer(0.1).timeout
+	assert(fades == ["fade_out", "fade_in"] and view.novel_speaker.text == "完了")
+	view.play_novel("cancel_fade", "res://fade.lua")
+	view.cancel()
+	await create_timer(0.1).timeout
+	assert(fades == ["fade_out", "fade_in", "fade_out"], "中断した台本の明転へ進んだ")
+
 	# 同じViewで再生を差し替えても、古いwait/tweenが新しい本文を書き換えない。
 	_write("res://waiting.lua", 'wait(0.05)\nmessage("古い", "古い文章")')
 	_write("res://fading.lua", 'background("res://texture.tres", 0.05)\nmessage("古い", "古い文章")')

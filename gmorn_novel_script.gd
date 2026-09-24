@@ -31,7 +31,7 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 	var move_regex := RegEx.new()
 	move_regex.compile('^chara_move\\("([^"]+)".*\\{([0-9.]+),\\s*([0-9.]+)\\}(?:,\\s*([0-9.]+))?')
 	var duration_regex := RegEx.new()
-	duration_regex.compile('^(wait|all_hide)\\(([0-9.]+)')
+	duration_regex.compile('^(wait|all_hide|fade_out|fade_in)\\(([0-9.]+)')
 	var bubble_regex := RegEx.new()
 	bubble_regex.compile('^bubble_show\\("([^"]+)"')
 	var bubble_hide_regex := RegEx.new()

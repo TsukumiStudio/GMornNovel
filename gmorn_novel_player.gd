@@ -92,6 +92,16 @@ func _advance_novel(from_input := false) -> void:
 		elif kind == "all_hide":
 			if host.novel_stage._begin_novel_all_hide(float(command["duration"])):
 				return
+		elif kind in ["fade_out", "fade_in"]:
+			if not host.fade_handler.is_valid():
+				push_error("ノベル: fade_handlerが未設定です")
+				return
+			host.novel_waiting = true
+			var generation: int = host.novel_generation
+			await host.fade_handler.call(kind, float(command["duration"]))
+			if not is_instance_valid(host) or not host.is_inside_tree() or host.novel_generation != generation:
+				return
+			host.novel_waiting = false
 		elif kind == "blackout":
 			host.novel_stage._begin_novel_blackout()
 		elif kind == "logo_show":
