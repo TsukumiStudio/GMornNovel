@@ -242,6 +242,12 @@ func _begin_novel_background(path: String, duration: float) -> bool:
 	if duration <= 0.0:
 		_settle_novel_background(texture)
 		return false
+	# 同じ半透明背景を重ねると途中だけ二重に暗くなり、確定時に明るさが跳ねる。
+	# 台本の待機時間は保ち、すでに表示中の1枚を使い続ける。
+	if host.novel_background.visible and host.novel_background.texture == texture \
+			and is_equal_approx(host.novel_background.modulate.a, 1.0):
+		host.novel_player._wait_for_novel_seconds(duration)
+		return true
 	host.novel_background_next.texture = texture
 	host.novel_background_next.modulate.a = 0.0
 	host.novel_background_next.visible = true

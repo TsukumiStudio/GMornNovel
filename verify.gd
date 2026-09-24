@@ -96,6 +96,14 @@ func _run() -> void:
 	view.play_novel("reset", "res://name_reset.lua")
 	assert(view.novel_speaker.text == "friend" and view.novel_display_names.is_empty())
 
+	# 半透明の同じ背景を連続指定しても、二重に重ねて暗くしない。
+	_write("res://same_background.lua", 'background("res://texture.tres", 0)\nbackground("res://texture.tres", 0.05)\nmessage("背景", "維持")')
+	view.play_novel("same_background", "res://same_background.lua")
+	assert(view.novel_waiting and not view.novel_background_next.visible)
+	await create_timer(0.1).timeout
+	assert(not view.novel_waiting and view.novel_speaker.text == "背景")
+	assert(not view.novel_background_next.visible and view.novel_background.modulate.a == 1.0)
+
 	# フェードの完了前には次の命令へ進まず、中断した再生を再開しない。
 	_write("res://fade.lua", 'fade_out(0.02)\nfade_in(0.02)\nmessage("完了", "明転後")')
 	assert(Parser.parse_novel("res://fade.lua").size() == 3)
