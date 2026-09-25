@@ -78,7 +78,7 @@ func _advance_novel(from_input := false) -> void:
 			if host.novel_speaker_id == character_id:
 				host.novel_speaker.text = String(command["display_name"])
 		elif kind == "load":
-			host.novel_stage._load_novel_character(String(command["name"]), String(command["path"]), float(command["scale"]))
+			host.novel_stage._load_novel_character(String(command["name"]), String(command["path"]), float(command["scale"]), bool(command.get("foreground", false)))
 		elif kind == "show":
 			host.novel_stage._show_novel_character(String(command["name"]), float(command["x"]), float(command["y"]), float(command["duration"]))
 		elif kind == "move":

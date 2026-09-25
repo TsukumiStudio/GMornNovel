@@ -16,10 +16,13 @@ func _shorts_track() -> Control:
 func _init(main: Control) -> void:
 	host = main
 
-func _load_novel_character(character_name: String, path: String, scale: float) -> void:
+## `foreground` の小道具は発話者の強調よりも手前に固定する。
+func _load_novel_character(character_name: String, path: String, scale: float, foreground := false) -> void:
 	host.novel_characters[character_name] = {"path": path, "scale": scale}
 	var texture := _load_novel_resource(path, "立ち絵（%s）" % character_name) as Texture2D
-	_novel_portrait_for(character_name).setup(character_name, texture, scale)
+	var portrait := _novel_portrait_for(character_name)
+	portrait.z_index = 1 if foreground else 0
+	portrait.setup(character_name, texture, scale)
 
 ## 台本が指す素材を読む。無ければ warning を残して null を返す。**台本は止めない。**
 ##
