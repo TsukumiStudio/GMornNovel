@@ -39,7 +39,7 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 	var wait_submit_regex := RegEx.new()
 	wait_submit_regex.compile('^wait_submit\\(')
 	var tutorial_regex := RegEx.new()
-	tutorial_regex.compile('^start_tutorial\\(\\s*"([^"]+)"(?:\\s*,\\s*(?:"([^"]*)"|([0-9]+)))?\\s*\\)')
+	tutorial_regex.compile('^start_tutorial\\(\\s*"([^"]+)"(?:\\s*,\\s*(?:"([^"]*)"|([0-9]+)))?(?:\\s*,\\s*"([^"]*)")?\\s*\\)')
 	var legacy_tutorial_regex := RegEx.new()
 	legacy_tutorial_regex.compile('^exec_tutorial\\(\\s*([0-9]+)\\s*\\)')
 	var blackout_regex := RegEx.new()
@@ -139,7 +139,7 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 			var argument: Variant = match_tutorial.get_string(2)
 			if not match_tutorial.get_string(3).is_empty():
 				argument = match_tutorial.get_string(3).to_int()
-			result.append({"kind": "tutorial", "tutorial": match_tutorial.get_string(1), "argument": argument})
+			result.append({"kind": "tutorial", "tutorial": match_tutorial.get_string(1), "argument": argument, "input_mode": match_tutorial.get_string(4)})
 			continue
 		var legacy_tutorial := legacy_tutorial_regex.search(line)
 		if legacy_tutorial != null:
