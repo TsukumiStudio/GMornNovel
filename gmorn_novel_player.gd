@@ -82,7 +82,8 @@ func _advance_novel(from_input := false) -> void:
 		elif kind == "show":
 			host.novel_stage._show_novel_character(String(command["name"]), float(command["x"]), float(command["y"]), float(command["duration"]))
 		elif kind == "move":
-			host.novel_stage._move_novel_character(String(command["name"]), float(command["x"]), float(command["y"]), float(command["duration"]))
+			if host.novel_stage._begin_novel_character_move(String(command["name"]), float(command["x"]), float(command["y"]), float(command["duration"])):
+				return
 		elif kind == "hide":
 			host.novel_stage._hide_novel_character(String(command["name"]))
 		elif kind == "bubble":

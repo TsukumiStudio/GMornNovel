@@ -195,16 +195,21 @@ func _show_novel_character(character_name: String, position_x: float, position_y
 			other.visible = false
 	portrait.show_at(position_x, position_y, duration)
 
-## 立ち絵を (x, y) へ動かす。補間は `NovelPortrait.move_to()`。待たない。
+## 立ち絵を (x, y) へ動かす。補間中は台本を待機し、着いてから次の命令へ進む。
 ##
-## 元版（`chara_move`）は動き終わるまで台本を止めるが、`chara_show` の淡入と同じで
-## 待つと会話が止まる。現れながら・動きながら喋る。
+## 元版（`chara_move`）と同じく、移動完了まで次の台詞・非表示・別の演出を実行しない。
+## `chara_show` の淡入だけは、従来どおり待たずに進む。
 
-func _move_novel_character(character_name: String, position_x: float, position_y: float, duration: float) -> void:
+func _begin_novel_character_move(character_name: String, position_x: float, position_y: float, duration: float) -> bool:
 	if not host.novel_portraits.has(character_name):
 		push_warning("ノベル: 読み込んでいない立ち絵を動かそうとした（%s）" % character_name)
-		return
-	(host.novel_portraits[character_name] as NovelPortrait).move_to(position_x, position_y, duration)
+		return false
+	var portrait := host.novel_portraits[character_name] as NovelPortrait
+	portrait.move_to(position_x, position_y, duration)
+	if duration <= 0.0:
+		return false
+	host.novel_player._wait_for_novel_tween(portrait.move_tween)
+	return true
 
 func _hide_novel_character(character_name: String) -> void:
 	if host.novel_portraits.has(character_name):

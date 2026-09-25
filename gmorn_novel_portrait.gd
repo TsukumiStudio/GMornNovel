@@ -72,7 +72,8 @@ func show_at(x: float, y: float, duration: float) -> void:
 	fade_tween = create_tween()
 	fade_tween.tween_property(self, "modulate:a", 1.0, duration)
 
-## (x, y) へ `duration` 秒かけて動く。0 なら即座に置く。待たない。
+## (x, y) へ `duration` 秒かけて動く。0 なら即座に置く。
+## 台本の待機は呼び出し側の `NovelStage` が受け持つ。
 func move_to(x: float, y: float, duration: float) -> void:
 	if move_tween != null and move_tween.is_valid():
 		move_tween.kill()
