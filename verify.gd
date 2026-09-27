@@ -115,7 +115,9 @@ func _run() -> void:
 	assert(view.novel_waiting and fades == ["fade_out"])
 	view.advance()
 	assert(fades == ["fade_out"], "入力でフェード待機を飛ばした")
-	await create_timer(0.1).timeout
+	deadline = Time.get_ticks_msec() + 2000
+	while view.novel_waiting and Time.get_ticks_msec() < deadline:
+		await process_frame
 	assert(fades == ["fade_out", "fade_in"] and view.novel_speaker.text == "完了")
 	view.play_novel("cancel_fade", "res://fade.lua")
 	view.cancel()
