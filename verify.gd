@@ -137,6 +137,28 @@ func _run() -> void:
 		assert(view.novel_speaker.text == "新しい" and view.novel_message.visible_characters == 0,
 			"古い非同期処理が新しい台本へ戻った")
 		assert(view.novel_background.texture == null, "古い背景が戻った")
+	# 対応命令に無い関数呼び出しは、名前と引数を command_handler へ渡す。trueで止まる。
+	_write("res://call.lua", '\n'.join([
+		'game_flag()',
+		'game_wait("a, b", 2, 0.5, true, {0.5, 0.5})',
+		'message("呼出", "後")',
+	]))
+	var call_commands := Parser.parse_novel("res://call.lua")
+	assert(call_commands.size() == 3 and call_commands[0] == {"kind": "call", "name": "game_flag", "args": []},
+		"引数なしの関数呼び出しを読めない: %s" % [call_commands])
+	assert(call_commands[1]["args"] == ["a, b", 2, 0.5, true, "{0.5, 0.5}"],
+		"関数呼び出しの引数を読めない: %s" % [call_commands[1]])
+	var calls: Array[String] = []
+	view.command_handler = func(command: Dictionary) -> bool:
+		calls.append(String(command["name"]))
+		return String(command["name"]) == "game_wait"
+	view.play_novel("call", "res://call.lua")
+	assert(calls == ["game_flag", "game_wait"] and view.novel_speaker.text != "呼出", "trueを返した呼び出しで止まらない")
+	view.novel_player._advance_novel()
+	await process_frame
+	assert(view.novel_speaker.text == "呼出", "再開後に次の命令へ進まない")
+	view.cancel()
+	view.command_handler = Callable()
 	view.play_novel("detached", "res://waiting.lua")
 	root.remove_child(view)
 	view.queue_free()
@@ -151,7 +173,7 @@ func _run() -> void:
 	OS.unset_environment("GMORN_NOVEL_CHARACTER_SOUND_INTERVAL")
 	view.queue_free()
 	await process_frame
-	print("GMORN NOVEL VERIFY: PASS (commands, character IDs, audio, input, cancellation, settings)")
+	print("GMORN NOVEL VERIFY: PASS (commands, calls, character IDs, audio, input, cancellation, settings)")
 	quit()
 
 func _write(path: String, text: String) -> void:
