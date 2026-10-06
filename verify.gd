@@ -140,14 +140,16 @@ func _run() -> void:
 	# 対応命令に無い関数呼び出しは、名前と引数を command_handler へ渡す。trueで止まる。
 	_write("res://call.lua", '\n'.join([
 		'game_flag()',
-		'game_wait("a, b", 2, 0.5, true, {0.5, 0.5})',
+		'game_wait("a, b", 2, 0.5, true, {0.5, 0.5}) -- 行末の注記',
+		'game_args("x\\"--y", -3, 1,)',
 		'message("呼出", "後")',
 	]))
 	var call_commands := Parser.parse_novel("res://call.lua")
-	assert(call_commands.size() == 3 and call_commands[0] == {"kind": "call", "name": "game_flag", "args": []},
+	assert(call_commands.size() == 4 and call_commands[0] == {"kind": "call", "name": "game_flag", "args": []},
 		"引数なしの関数呼び出しを読めない: %s" % [call_commands])
 	assert(call_commands[1]["args"] == ["a, b", 2, 0.5, true, "{0.5, 0.5}"],
 		"関数呼び出しの引数を読めない: %s" % [call_commands[1]])
+	assert(call_commands[2]["args"] == ['x"--y', -3, 1], "文字列中の -- や末尾のカンマを読み違えた: %s" % [call_commands[2]])
 	var calls: Array[String] = []
 	view.command_handler = func(command: Dictionary) -> bool:
 		calls.append(String(command["name"]))

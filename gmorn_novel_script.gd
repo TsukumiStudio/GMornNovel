@@ -191,10 +191,29 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 		if match_shorts_hide != null:
 			result.append({"kind": "shorts_hide"})
 			continue
-		var match_call := call_regex.search(line)
+		var match_call := call_regex.search(_strip_trailing_comment(line))
 		if match_call != null:
 			result.append({"kind": "call", "name": match_call.get_string(1), "args": _parse_call_args(match_call.get_string(2))})
 	return result
+
+## 文字列の外にある行末の `-- 注記` を落とす。
+static func _strip_trailing_comment(line: String) -> String:
+	var in_string := false
+	var escaped := false
+	for index in line.length():
+		var character := line[index]
+		if in_string:
+			if escaped:
+				escaped = false
+			elif character == "\\":
+				escaped = true
+			elif character == '"':
+				in_string = false
+		elif character == '"':
+			in_string = true
+		elif line.substr(index, 2) == "--":
+			return line.substr(0, index).strip_edges()
+	return line
 
 ## 関数呼び出しの引数を、文字列・数値・真偽値の配列へ読む。それ以外（`{0.5, 0.5}` など）は
 ## 書かれたままの文字列で渡す。
@@ -226,7 +245,8 @@ static func _parse_call_args(text: String) -> Array:
 			current = ""
 			continue
 		current += character
-	if not current.strip_edges().is_empty() or not tokens.is_empty():
+	# 末尾のカンマ（`f(1,)`）は空の引数にしない。
+	if not current.strip_edges().is_empty():
 		tokens.append(current.strip_edges())
 	for token: String in tokens:
 		if token.length() >= 2 and token.begins_with('"') and token.ends_with('"'):
