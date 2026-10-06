@@ -23,6 +23,10 @@ const Parser := preload("gmorn_novel_script.gd")
 var script_loader: Callable = Parser.parse_novel
 ## 利用側固有の待機命令。trueを返すと、利用側が明示的に進行を再開するまで止まる。
 var tutorial_handler: Callable
+## 対応命令に無い関数呼び出し（`名前(引数, ...)`）を受け取る。
+## `{"kind": "call", "name": 名前, "args": [引数...]}` を渡し、trueを返すと
+## `tutorial_handler` と同じく利用側が再開するまで止まる。未設定なら読み飛ばす。
+var command_handler: Callable
 ## 全画面フェード。種類と秒数を受け取り、完了までawaitできる処理を接続する。
 var fade_handler: Callable
 var visual_clock := 0.0

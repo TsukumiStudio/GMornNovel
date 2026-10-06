@@ -56,6 +56,9 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 	bgm_mute_regex.compile('^bgm_mute\\(\\s*([0-9.]*)')
 	var stream_start_regex := RegEx.new()
 	stream_start_regex.compile('^piita_stream_start\\(\\)')
+	# 上の決め打ちの命令に当たらない関数呼び出し。利用側の `command_handler` へ渡す。
+	var call_regex := RegEx.new()
+	call_regex.compile('^([A-Za-z_][A-Za-z0-9_]*)\\((.*)\\)\\s*;?$')
 	var se_regex := RegEx.new()
 	se_regex.compile('^se\\("((?:[^"\\\\]|\\\\.)*)"')
 	var shorts_image_regex := RegEx.new()
@@ -187,7 +190,76 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 		var match_shorts_hide := shorts_hide_regex.search(line)
 		if match_shorts_hide != null:
 			result.append({"kind": "shorts_hide"})
+			continue
+		var match_call := call_regex.search(_strip_trailing_comment(line))
+		if match_call != null:
+			result.append({"kind": "call", "name": match_call.get_string(1), "args": _parse_call_args(match_call.get_string(2))})
 	return result
+
+## 文字列の外にある行末の `-- 注記` を落とす。
+static func _strip_trailing_comment(line: String) -> String:
+	var in_string := false
+	var escaped := false
+	for index in line.length():
+		var character := line[index]
+		if in_string:
+			if escaped:
+				escaped = false
+			elif character == "\\":
+				escaped = true
+			elif character == '"':
+				in_string = false
+		elif character == '"':
+			in_string = true
+		elif line.substr(index, 2) == "--":
+			return line.substr(0, index).strip_edges()
+	return line
+
+## 関数呼び出しの引数を、文字列・数値・真偽値の配列へ読む。それ以外（`{0.5, 0.5}` など）は
+## 書かれたままの文字列で渡す。
+static func _parse_call_args(text: String) -> Array:
+	var args: Array = []
+	var tokens: Array[String] = []
+	var current := ""
+	var depth := 0
+	var in_string := false
+	var escaped := false
+	for character in text:
+		if in_string:
+			current += character
+			if escaped:
+				escaped = false
+			elif character == "\\":
+				escaped = true
+			elif character == '"':
+				in_string = false
+			continue
+		if character == '"':
+			in_string = true
+		elif character == "{" or character == "(":
+			depth += 1
+		elif character == "}" or character == ")":
+			depth -= 1
+		elif character == "," and depth == 0:
+			tokens.append(current.strip_edges())
+			current = ""
+			continue
+		current += character
+	# 末尾のカンマ（`f(1,)`）は空の引数にしない。
+	if not current.strip_edges().is_empty():
+		tokens.append(current.strip_edges())
+	for token: String in tokens:
+		if token.length() >= 2 and token.begins_with('"') and token.ends_with('"'):
+			args.append(token.substr(1, token.length() - 2).c_unescape())
+		elif token == "true" or token == "false":
+			args.append(token == "true")
+		elif token.is_valid_int():
+			args.append(token.to_int())
+		elif token.is_valid_float():
+			args.append(token.to_float())
+		else:
+			args.append(token)
+	return args
 
 static func _resolve_path(path: String, resolver: Callable) -> String:
 	return String(resolver.call(path)) if resolver.is_valid() else path
