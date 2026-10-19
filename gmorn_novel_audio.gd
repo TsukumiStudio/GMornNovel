@@ -1,6 +1,6 @@
 extends RefCounted
 
-## 単独利用時の音声。ゲームの共通ミキサーへ繋ぐ場合はこのアダプターを差し替える。
+## 単独利用時の音声アダプター。共通ミキサーへ繋ぐ場合は同じメソッドを持つものへ差し替える。
 const SoundScene := preload("gmorn_novel_sound.tscn")
 
 var host: Control

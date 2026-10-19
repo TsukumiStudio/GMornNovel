@@ -16,7 +16,7 @@ func _shorts_track() -> Control:
 func _init(main: Control) -> void:
 	host = main
 
-## `foreground` の小道具は発話者の強調よりも手前に固定する。
+## `foreground` の小道具は発話者の前面並べ替えより手前に固定する。
 func _load_novel_character(character_name: String, path: String, scale: float, foreground := false) -> void:
 	host.novel_characters[character_name] = {"path": path, "scale": scale}
 	var texture := _load_novel_resource(path, "立ち絵（%s）" % character_name) as Texture2D
@@ -24,21 +24,13 @@ func _load_novel_character(character_name: String, path: String, scale: float, f
 	portrait.z_index = 1 if foreground else 0
 	portrait.setup(character_name, texture, scale)
 
-## 台本が指す素材を読む。無ければ warning を残して null を返す。**台本は止めない。**
-##
-## `load()` に無い道を渡すとエンジンの ERROR が出る。元版にだけある素材（OP新版の
-## 曲など）を指した台本でも、その行が抜けるだけで済むようにする。
-
+## 無い素材は warning だけで null を返し、台本は止めない。`load()` に無い道を渡すと
+## エンジンの ERROR が出る。
 func _load_novel_resource(path: String, what: String) -> Resource:
 	if not ResourceLoader.exists(path):
 		push_warning("ノベル: %sが読めない（%s）" % [what, path])
 		return null
 	return load(path)
-
-## IDに対応する立ち絵。無ければ作って置き場の末尾へ足す。
-##
-## IDで初めて呼ばれた瞬間に Image を作る。話す人物は台詞ごとに最前面へ
-## 並べ替えるので、重なった場合も話者が見える。
 
 func _novel_portrait_for(character_name: String) -> NovelPortrait:
 	if host.novel_portraits.has(character_name):
@@ -50,11 +42,8 @@ func _novel_portrait_for(character_name: String) -> NovelPortrait:
 	host.novel_portraits[character_name] = portrait
 	return portrait
 
-## 前の物語の立ち絵を全部捨てる。名前が同じでも物語ごとに作り直す。
-##
-## `queue_free()` だけだと同じこまの中では子として残り、同じ名前の作り直しが
-## 黙って別名にされる。外してから捨てる。
-
+## `queue_free()` だけだと同じこまの中では子として残り、同じ名前の作り直しが黙って
+## 別名にされる。外してから捨てる。
 func _clear_novel_portraits() -> void:
 	host.novel_portraits.clear()
 	if not is_instance_valid(host.novel_portrait_host):
@@ -145,8 +134,7 @@ func _hide_novel_shorts() -> void:
 		host.novel_shorts.position.y = 0.0
 	)
 
-## 台詞・立ち絵を含めて黒幕で覆う。黒幕は通常背景より前に置くので、
-## `background()` だけでは覆えない会話枠まで確実に隠せる。
+## 黒幕は `background()` では覆えない会話枠まで隠す。
 func _begin_novel_blackout() -> void:
 	for portrait: NovelPortrait in host.novel_portraits.values():
 		portrait.visible = false
@@ -158,7 +146,6 @@ func _begin_novel_blackout() -> void:
 	if host.novel_blackout != null:
 		host.novel_blackout.visible = true
 
-## 黒幕の前へ全画面ロゴを出す。存在しない素材は既存の背景命令と同じく警告だけで進める。
 func _show_novel_logo(path: String) -> void:
 	if host.novel_logo == null:
 		push_warning("ノベル: ロゴ表示ノードが無い")
@@ -173,17 +160,13 @@ func _hide_novel_logo() -> void:
 	if host.novel_logo != null:
 		host.novel_logo.visible = false
 
-## 次の台本へ黒幕・ロゴを持ち越さない。
 func _clear_novel_outro() -> void:
 	if host.novel_blackout != null:
 		host.novel_blackout.visible = false
 	_hide_novel_logo()
 
-## 立ち絵を (x, y) へ出す。置き方は `NovelPortrait.show_at()`。
-##
-## 人物ごとに独立して表示する。ただし別の人物を**完全に同じ座標**へ出す場合は、
-## 先に居た人物を隠して入れ替える。近接した座標は別の立ち位置として併存する。
-
+## 別の人物を完全に同じ座標へ出す場合だけ、先に居た人物を隠して入れ替える。
+## 近接した座標は別の立ち位置として併存する。
 func _show_novel_character(character_name: String, position_x: float, position_y: float, duration: float) -> void:
 	if not host.novel_portraits.has(character_name):
 		push_warning("ノベル: 読み込んでいない立ち絵を出そうとした（%s）" % character_name)
@@ -198,11 +181,7 @@ func _show_novel_character(character_name: String, position_x: float, position_y
 			other.visible = false
 	portrait.show_at(position_x, position_y, duration)
 
-## 立ち絵を (x, y) へ動かす。補間中は台本を待機し、着いてから次の命令へ進む。
-##
-## 元版（`chara_move`）と同じく、移動完了まで次の台詞・非表示・別の演出を実行しない。
-## `chara_show` の淡入だけは、従来どおり待たずに進む。
-
+## 移動が終わるまで台本を待たせる（`chara_show` の淡入は待たない）。
 func _begin_novel_character_move(character_name: String, position_x: float, position_y: float, duration: float) -> bool:
 	if not host.novel_portraits.has(character_name):
 		push_warning("ノベル: 読み込んでいない立ち絵を動かそうとした（%s）" % character_name)
@@ -218,14 +197,8 @@ func _hide_novel_character(character_name: String) -> void:
 	if host.novel_portraits.has(character_name):
 		(host.novel_portraits[character_name] as NovelPortrait).visible = false
 
-## 話している人物の立ち絵だけを明るく・高くする。
-##
-## 触るのは目標だけで、寄せは立ち絵が自分で行う（`NovelPortrait._process`）。
-## 濃さ（アルファ）は必ず元のまま残す。立ち絵はデータの指定で0.3秒かけて現れ、
-## その途中で同じ人物が話し始める並びが実データのほとんどを占める。ここで
-## 濃さまで書き込むと、出かけた立ち絵が一瞬で出来上がり、フェードインが
-## 起きなかったことになる。
-
+## 目標だけ変え、寄せは立ち絵の `_process` に任せる。濃さ（アルファ）は触らない。
+## 淡入の途中で同じ人物が話し始める並びが多く、ここで書くと淡入が消える。
 func _focus_novel_speaker(character_name: String) -> void:
 	for portrait: NovelPortrait in host.novel_portraits.values():
 		portrait.set_focused(character_name.is_empty() or portrait.character_id == character_name)
@@ -235,14 +208,8 @@ func _focus_novel_speaker(character_name: String) -> void:
 	if speaker.visible and is_instance_valid(host.novel_portrait_host):
 		host.novel_portrait_host.move_child(speaker, host.novel_portrait_host.get_child_count() - 1)
 
-## 背景を差し替える。`duration` が0より大きければ2枚目を淡く重ね、終わるまで待つ
-## （真を返す）。
-##
-## 元版は2枚でクロスフェードする（`MornLuaNovelBackgroundView`）。1枚を透明に
-## してから淡入する作りだと、差し替えの瞬間に前の絵が消えて職場が透けていた。
-## 前の絵はそのまま残し、上に次の絵を淡く出す。淡入が終わったら絵を1枚目へ
-## 写して2枚目を伏せる（`_settle_novel_background`）ので、役は入れ替えない。
-
+## 前の絵を残したまま上に次の絵を淡く出す。1枚を透明にしてから淡入すると、
+## 差し替えの瞬間に下の画面が透ける。淡入後は1枚目へ写し、役は入れ替えない。
 func _begin_novel_background(path: String, duration: float) -> bool:
 	var texture := _load_novel_resource(path, "背景") as Texture2D
 	if texture == null:
@@ -251,7 +218,7 @@ func _begin_novel_background(path: String, duration: float) -> bool:
 		_settle_novel_background(texture)
 		return false
 	# 同じ半透明背景を重ねると途中だけ二重に暗くなり、確定時に明るさが跳ねる。
-	# 台本の待機時間は保ち、すでに表示中の1枚を使い続ける。
+	# 待機時間だけ保つ。
 	if host.novel_background.visible and host.novel_background.texture == texture \
 			and is_equal_approx(host.novel_background.modulate.a, 1.0):
 		host.novel_player._wait_for_novel_seconds(duration)
@@ -264,8 +231,6 @@ func _begin_novel_background(path: String, duration: float) -> bool:
 	host.novel_player._wait_for_novel_tween(tween, _settle_novel_background.bind(texture))
 	return true
 
-## 淡入が終わった背景を1枚目へ写し、2枚目を伏せる。
-
 func _settle_novel_background(texture: Texture2D) -> void:
 	host.novel_background.texture = texture
 	host.novel_background.visible = true
@@ -273,9 +238,7 @@ func _settle_novel_background(texture: Texture2D) -> void:
 	host.novel_background_next.visible = false
 	host._mark_initial_visual_ready()
 
-## 立ち絵・背景・吹き出しをまとめて消す。`duration` が0より大きければ淡出し、
-## 消え切るまで待つ（真を返す）。0なら即座に伏せる。元版は0でも背景を伏せる。
-
+## 0 でも背景を伏せる（元版と同じ）。
 func _begin_novel_all_hide(duration: float) -> bool:
 	if duration <= 0.0:
 		for portrait: NovelPortrait in host.novel_portraits.values():
@@ -297,17 +260,13 @@ func _begin_novel_all_hide(duration: float) -> bool:
 	host.novel_player._wait_for_novel_tween(tween, _begin_novel_all_hide.bind(0.0))
 	return true
 
-## 吹き出しを出す。元版は同じ吹き出しなら文字を空にし、違えば作り直す。
-## どちらも文字は空になるので、ここでも空にする。
-
+## 文字も空にする（元版と同じ）。
 func _show_novel_bubble() -> void:
 	host.novel_dialogue_panel.visible = true
 	host.novel_dialogue_panel.modulate.a = 1.0
 	host.novel_dialogue_intentionally_hidden = false
 	host.novel_speaker.text = ""
 	host.novel_message.text = ""
-
-## 吹き出しを畳む。元版は吹き出しの実体ごと捨てる（`bubble_hide`）。
 
 func _hide_novel_bubble() -> void:
 	host.novel_dialogue_panel.visible = false

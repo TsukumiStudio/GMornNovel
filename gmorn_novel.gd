@@ -1,11 +1,10 @@
 extends Control
 
-## ノベルの進行・表示・音声・状態はこのノードが持つ。利用側から受け取るのは
-## `play_novel()` の再生要求だけで、読み終えたら `finished` を鳴らして事実だけを返す。
+## ノベルの View。既読や画面遷移は持たず、読み終えたら `finished` で事実だけ返す。
 
 signal finished(id: String, completion_action: String)
 signal sound_requested(stream: AudioStream)
-## 最初の背景または台詞を表示できる状態になった。暗転遷移の明転待ちに使う。
+## 暗転遷移の明転待ちに使う。
 signal initial_visual_ready
 
 const Player := preload("gmorn_novel_player.gd")
@@ -21,13 +20,12 @@ const Parser := preload("gmorn_novel_script.gd")
 @export var bgm_volume_db := 0.0
 @export var se_volume_db := 0.0
 var script_loader: Callable = Parser.parse_novel
-## 利用側固有の待機命令。trueを返すと、利用側が明示的に進行を再開するまで止まる。
+## true を返すと、利用側が明示的に進行を再開するまで止まる。
 var tutorial_handler: Callable
-## 対応命令に無い関数呼び出し（`名前(引数, ...)`）を受け取る。
-## `{"kind": "call", "name": 名前, "args": [引数...]}` を渡し、trueを返すと
-## `tutorial_handler` と同じく利用側が再開するまで止まる。未設定なら読み飛ばす。
+## 対応命令に無い関数呼び出しを `{"kind": "call", "name", "args"}` で受け取る。
+## true を返すと `tutorial_handler` と同じく止まる。未設定なら読み飛ばす。
 var command_handler: Callable
-## 全画面フェード。種類と秒数を受け取り、完了までawaitできる処理を接続する。
+## 全画面フェード `(種類, 秒数)`。完了まで await できる処理を接続する。
 var fade_handler: Callable
 var visual_clock := 0.0
 
@@ -51,34 +49,31 @@ var novel_audio: RefCounted
 var novel_commands: Array[Dictionary] = []
 var novel_index := 0
 var novel_characters: Dictionary = {}
-## キャラID → 立ち絵（`NovelPortrait`）。発話時は同じIDの立ち絵を手前へ出す。
+## キャラID → 立ち絵。
 var novel_portraits: Dictionary = {}
-## 台本内だけで有効なIDごとの表示名。次の再生開始時にリセットする。
+## 台本内だけで有効。次の再生開始時にリセットする。
 var novel_display_names: Dictionary = {}
 var novel_speaker_id := ""
 var novel_id := ""
 var novel_waiting := false
-## `wait_submit` で押されるのを待っているか。検査が読む。
+## 検査が読む。
 var novel_submit_waiting := false
-## 音声アダプターが使用する曲の変更状態。
 var novel_bgm_touched := false
-## 共通BGMを使うアダプター向けの復帰先。既定の専用BGMでは使用しない。
+## 共通 BGM を使うアダプター向けの復帰先。既定の専用 BGM では使わない。
 var novel_bgm_before: AudioStream = null
-## ノベルの都合で曲を止めた回数。**窓の無い実行では鳴らないので、検査はこれを読む。**
+## ヘッドレスでは鳴らないので、検査はこれを読む。
 var novel_bgm_stop_count := 0
-## 最後に `bgm_stop` が求めた淡出の秒。検査が読む。
+## 検査が読む。
 var last_novel_bgm_stop_fade := -1.0
-## いま出している文字数。途中の送り操作では全文表示する。
 var novel_revealed := 0.0
 var novel_generation := 0
 var novel_completion_action := ""
-## 現在の台本が、最初に見せる絵を準備し終えたか。
 var initial_visual_prepared := false
-## `all_hide` / `blackout` により会話枠を意図して隠しているか。
+## `all_hide` / `blackout` で意図して隠した枠に台詞が来ても警告しないための印。
 var novel_dialogue_intentionally_hidden := false
 
 func _ready() -> void:
-	# Editor用の代表立ち絵は、台本の人物辞書や表示制御へ混ぜない。
+	# Editor 用の代表立ち絵を台本の人物辞書へ混ぜない。
 	if representative_portrait != null:
 		novel_portrait_host.remove_child(representative_portrait)
 		representative_portrait.queue_free()
@@ -88,7 +83,7 @@ func _ready() -> void:
 		novel_blackout.visible = false
 	if novel_logo != null:
 		novel_logo.visible = false
-	# GMornButtonを使う場合も、クリック音はノベルだけが決める。
+	# GMornButton を使う場合も、クリック音はノベルだけが鳴らす。重なるため。
 	var button := $NovelAdvanceButton as BaseButton
 	if "play_submit_sound" in button:
 		button.set("play_submit_sound", false)
@@ -106,13 +101,10 @@ func _process(delta: float) -> void:
 	novel_player._update_novel_reveal(delta)
 	novel_player._update_novel_advance()
 
-## 台本を再生する。完了時にIDと利用側の文脈をfinishedで返す。
-
 func play_novel(id: String, path: String, completion_action := "") -> void:
 	novel_player.play_novel(id, path, completion_action)
 
-## 最初の背景クロスフェードまで待つ。背景無しの台本は最初の台詞を準備した時点で
-## 済む。中断・別台本への差し替え時は false を返す。
+## 背景無しの台本は最初の台詞を準備した時点で済む。中断・差し替え時は false。
 func wait_for_initial_visual() -> bool:
 	var generation := novel_generation
 	while is_inside_tree() and visible and generation == novel_generation and not initial_visual_prepared:
@@ -140,8 +132,7 @@ func is_revealing() -> bool:
 func _update_novel_advance() -> void:
 	novel_player._update_novel_advance()
 
-## 画面遷移などで途中の物語を打ち切る。待機の続きは再開しない。
-
+## 待機の続きは再開しない。
 func cancel() -> void:
 	novel_player._cancel_novel()
 	novel_audio._restore_bgm_after_novel()

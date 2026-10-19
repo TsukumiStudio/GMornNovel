@@ -1,7 +1,6 @@
 extends RefCounted
 
-## ノベル台本(Lua風テキスト)の解釈。読み込んだファイルを命令の配列へ直すだけの
-## 純関数。Lua VMではなく、対応する表示命令だけを読む。
+## Lua 風の台本を命令の配列へ直す純関数。Lua VM ではなく、対応する表示命令だけを読む。
 
 
 
@@ -56,7 +55,7 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 	bgm_mute_regex.compile('^bgm_mute\\(\\s*([0-9.]*)')
 	var stream_start_regex := RegEx.new()
 	stream_start_regex.compile('^piita_stream_start\\(\\)')
-	# 上の決め打ちの命令に当たらない関数呼び出し。利用側の `command_handler` へ渡す。
+	# 決め打ちの命令に当たらない関数呼び出しは、捨てずに利用側の `command_handler` へ渡す。
 	var call_regex := RegEx.new()
 	call_regex.compile('^([A-Za-z_][A-Za-z0-9_]*)\\((.*)\\)\\s*;?$')
 	var se_regex := RegEx.new()
@@ -70,8 +69,7 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 	var in_block_comment := false
 	while not file.eof_reached():
 		var line := file.get_line().strip_edges()
-		# Luaの複数行コメントは、この簡易パーサーでも状態を跨いで無視する。
-		# 閉じた後ろに命令が続く書式も残りの文字列を同じ行として解析する。
+		# Lua の複数行コメントは行を跨ぐ。閉じた後ろに続く命令は同じ行として読む。
 		if in_block_comment:
 			var comment_end := line.find("]]" )
 			if comment_end < 0:
@@ -146,7 +144,7 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 			continue
 		var legacy_tutorial := legacy_tutorial_regex.search(line)
 		if legacy_tutorial != null:
-			# 既存台本との互換。新規台本は用途を明示する start_tutorial を使う。
+			# 既存台本との互換。新規台本は start_tutorial を使う。
 			result.append({"kind": "tutorial", "tutorial": "fruit_press", "argument": legacy_tutorial.get_string(1).to_int()})
 			continue
 		if blackout_regex.search(line) != null:
@@ -196,7 +194,7 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 			result.append({"kind": "call", "name": match_call.get_string(1), "args": _parse_call_args(match_call.get_string(2))})
 	return result
 
-## 文字列の外にある行末の `-- 注記` を落とす。
+## 文字列の中の `--` は注記ではない。
 static func _strip_trailing_comment(line: String) -> String:
 	var in_string := false
 	var escaped := false
@@ -215,8 +213,7 @@ static func _strip_trailing_comment(line: String) -> String:
 			return line.substr(0, index).strip_edges()
 	return line
 
-## 関数呼び出しの引数を、文字列・数値・真偽値の配列へ読む。それ以外（`{0.5, 0.5}` など）は
-## 書かれたままの文字列で渡す。
+## 文字列・数値・真偽値以外（`{0.5, 0.5}` など）は書かれたままの文字列で渡す。
 static func _parse_call_args(text: String) -> Array:
 	var args: Array = []
 	var tokens: Array[String] = []
@@ -245,7 +242,7 @@ static func _parse_call_args(text: String) -> Array:
 			current = ""
 			continue
 		current += character
-	# 末尾のカンマ（`f(1,)`）は空の引数にしない。
+	# 末尾のカンマ（`f(1,)`）を空の引数にしない。
 	if not current.strip_edges().is_empty():
 		tokens.append(current.strip_edges())
 	for token: String in tokens:

@@ -2,7 +2,6 @@ extends RefCounted
 
 const NovelScript := preload("gmorn_novel_script.gd")
 
-## 送り待ちの印を明滅させる周期（秒）。
 const NOVEL_ADVANCE_BLINK_PERIOD := 0.8
 
 
@@ -33,9 +32,7 @@ func play_novel(id: String, path: String, completion_action := "") -> void:
 	host.initial_visual_prepared = false
 	host.novel_dialogue_intentionally_hidden = false
 	host.visible = true
-	# 背景は空から始める。前の物語の最後の絵を残すと、次の物語の最初の
-	# `background` が淡入する0.3秒のあいだ、前の絵が透けて見える。元版も再生の
-	# たびに2枚とも空にしている（`MornLuaNovelBackgroundView.Clear`）。
+	# 前の物語の最後の絵を残すと、次の最初の `background` が淡入する間に透けて見える。
 	host.novel_background.texture = null
 	host.novel_background.visible = true
 	host.novel_background.modulate.a = 1.0
@@ -48,12 +45,7 @@ func play_novel(id: String, path: String, completion_action := "") -> void:
 	host.novel_message.text = ""
 	_advance_novel()
 
-## ノベルを進める。
-##
-## 文字を出している途中で押されたら、まず全部出す。次の台詞へ飛ばすと、
-## 読む前に消えたように見える。Unity版も同じで、送りの操作は最初の1回が
-## 早送り、2回目で次へ進む。
-
+## 文字を出している途中なら次へ飛ばさず全部出す。読む前に消えたように見える。
 func _advance_novel(from_input := false) -> void:
 	if host.novel_waiting:
 		return
@@ -113,7 +105,6 @@ func _advance_novel(from_input := false) -> void:
 			_wait_for_novel_seconds(float(command["duration"]))
 			return
 		elif kind == "wait_submit":
-			# 押されるまで止まる。`message` と同じで、次の `_advance_novel()` で続きへ進む。
 			host.novel_submit_waiting = true
 			return
 		elif kind == "tutorial":
@@ -140,8 +131,7 @@ func _advance_novel(from_input := false) -> void:
 		elif kind == "shorts_hide":
 			host.novel_stage._hide_novel_shorts()
 		elif kind == "message":
-			# 枠が無いと台詞が見えない。元版は枠が無ければ台詞ごと飛ばす（警告だけ残す）
-			# が、遊ぶ側からは台詞が消えたようにしか見えないので、枠を出し直して見せる。
+			# 枠が無いとき台詞を飛ばさず枠を出し直す。飛ばすと遊ぶ側には台詞が消えたように見える。
 			if not host.novel_dialogue_panel.visible or host.novel_dialogue_panel.modulate.a < 1.0:
 				if not host.novel_dialogue_intentionally_hidden:
 					push_warning("ノベル: 吹き出しを出さずに台詞が来た。出し直す（%s）" % host.novel_id)
@@ -157,27 +147,18 @@ func _advance_novel(from_input := false) -> void:
 	host._mark_initial_visual_ready()
 	_finish_novel()
 
-## 台詞を1文字ずつ出し始める。
-##
-## 一度に全部出すと、読む側の目が置いていかれる。0.04秒ごとに1文字出す。
-
 func _begin_novel_reveal() -> void:
 	host.novel_revealed = 0.0
 	host.novel_message.visible_characters = 0
-
-## まだ出し切っていないかどうか。
 
 func _novel_revealing() -> bool:
 	return host.novel_message != null and host.novel_message.visible_characters >= 0 \
 		and host.novel_message.visible_characters < host.novel_message.get_total_character_count()
 
-## 残りを一気に出す。操作時の音は入力側で1回だけ鳴らす。
-
+## 音は鳴らさない。操作時の音は入力側で1回だけ鳴らす。
 func _finish_novel_reveal() -> void:
 	host.novel_revealed = float(host.novel_message.get_total_character_count())
 	host.novel_message.visible_characters = -1
-
-## 文字送りを進める。
 
 func _update_novel_reveal(delta: float) -> void:
 	char_sound_cooldown = maxf(0.0, char_sound_cooldown - delta)
@@ -194,7 +175,7 @@ func _update_novel_reveal(delta: float) -> void:
 	else:
 		host.novel_message.visible_characters = shown
 
-	# 文字が増えたフレームだけ鳴らす。低FPSでも追いついた文字数分を重ねない。
+	# 文字が増えたフレームだけ鳴らす。低 FPS でも追いついた文字数分を重ねない。
 	if shown > previous and not host.novel_message.get_parsed_text().substr(previous, shown - previous).replace("　", " ").strip_edges().is_empty():
 		_play_char_sound()
 
@@ -204,16 +185,11 @@ func _play_char_sound(from_input := false) -> void:
 	host.novel_audio.play_se(host.character_sound)
 	char_sound_cooldown = host.character_sound_interval
 
-## 送り待ちの印を更新する。
-##
-## ノベルは押すまで進まないが、押せることを示すものが無いと、待っているのか
-## 止まっているのか分からない。文章が出ていて、かつ時間待ちでないときだけ
-## 出し、明滅させて手が要ることを伝える。
-
+## 送り待ちの印。文章が出ていて時間待ちでないときだけ出し、明滅させる。
 func _update_novel_advance() -> void:
 	if host.novel_advance == null:
 		return
-	# 出し切るまでは印を出さない。まだ続きがあるのに送れそうに見える。
+	# 出し切るまで印を出すと、まだ続きがあるのに送れそうに見える。
 	if not host.visible or host.novel_waiting or not host.novel_dialogue_panel.visible \
 			or _novel_revealing():
 		host.novel_advance.visible = false
@@ -221,10 +197,7 @@ func _update_novel_advance() -> void:
 	host.novel_advance.visible = true
 	host.novel_advance.modulate.a = 0.5 + 0.5 * sin(host.visual_clock / NOVEL_ADVANCE_BLINK_PERIOD * TAU)
 
-## ノベルの局所状態を畳んで `finished` を鳴らす。完了時の分岐（既読記録・
-## 画面復帰など）は利用側（`finished` の
-## 受け手）が持つ。ここでは「読み終わった」という事実だけを渡す。
-
+## 既読記録や画面復帰は `finished` の受け手が持つ。
 func _finish_novel() -> void:
 	host.novel_generation += 1
 	host.visible = false
@@ -266,7 +239,6 @@ func _cancel_novel() -> void:
 	host.novel_generation += 1
 	host.novel_waiting = false
 	host.novel_submit_waiting = false
-	# 利用側の画面遷移へ、前の曲の控えを持ち越さない。
 	host.novel_bgm_touched = false
 	host.novel_bgm_before = null
 
