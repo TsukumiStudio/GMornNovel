@@ -175,9 +175,12 @@ func _update_novel_reveal(delta: float) -> void:
 	else:
 		host.novel_message.visible_characters = shown
 
-	# 文字が増えたフレームだけ鳴らす。低 FPS でも追いついた文字数分を重ねない。
-	if shown > previous and not host.novel_message.get_parsed_text().substr(previous, shown - previous).replace("　", " ").strip_edges().is_empty():
-		_play_char_sound()
+	# 空白・改行は鳴らさず、低FPSで複数文字が増えた場合も文字ごとに要求する。
+	if shown > previous:
+		var added_text: String = host.novel_message.get_parsed_text().substr(previous, shown - previous)
+		for character: String in added_text:
+			if not character.replace("　", " ").strip_edges().is_empty():
+				_play_char_sound()
 
 func _play_char_sound(from_input := false) -> void:
 	if not from_input and char_sound_cooldown > 0.0:
