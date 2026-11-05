@@ -3,9 +3,7 @@ extends TextureRect
 ## 立ち絵1枚。キャラIDごとに1つ。絵の中心を正規化座標 (x, y) に置く。
 ## 左右2枠へ振り分けない。x=0.5 が右へ寄り、3人目が出せなくなる。
 ## y は元版（Unity）が上が正なので 1-y で読み替える。
-##
-## 位置と明るさは目標へ毎こま寄る。移動の補間中は寄せを止め、補間が置いた位置を使う。
-## 濃さ（アルファ）は淡入の Tween だけが書く。
+## 位置補間中は_processの追従を止め、アルファは淡入Tweenだけが更新する。
 
 @export var canvas_size := Vector2(1920.0, 1080.0)
 ## 元版の値（上が正）を Godot の向きへ直してある。
@@ -33,8 +31,7 @@ func setup(name_in: String, texture_in: Texture2D, scale_in: float) -> void:
 	# 大きさが変わっても中心を動かさない。
 	_place(target_center)
 
-## 色も濃さも入れ直す。暗くされていた人物を出し直すとき、暗さを引き継ぐと次の文章まで
-## ずっと暗いまま見える。
+## 再表示時に前の暗さを引き継がないよう、色と濃さを戻す。
 func show_at(x: float, y: float, duration: float) -> void:
 	if move_tween != null and move_tween.is_valid():
 		move_tween.kill()
@@ -65,7 +62,6 @@ func move_to(x: float, y: float, duration: float) -> void:
 	move_tween = create_tween()
 	move_tween.tween_method(_set_base_center, base_center, end_center, duration)
 
-## 目標だけ変え、寄せは `_process` が行う。
 func set_focused(value: bool) -> void:
 	focused = value
 	_apply_focus()
@@ -106,6 +102,5 @@ func _apply_focus() -> void:
 func _place(center_position: Vector2) -> void:
 	position = center_position - size * 0.5
 
-## y は元版が上が正なので 1-y。
 func _to_center(x: float, y: float) -> Vector2:
 	return Vector2(canvas_size.x * x, canvas_size.y * (1.0 - y))

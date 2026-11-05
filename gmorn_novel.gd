@@ -56,14 +56,12 @@ var novel_display_names: Dictionary = {}
 var novel_speaker_id := ""
 var novel_id := ""
 var novel_waiting := false
-## 検査が読む。
 var novel_submit_waiting := false
 var novel_bgm_touched := false
 ## 共通 BGM を使うアダプター向けの復帰先。既定の専用 BGM では使わない。
 var novel_bgm_before: AudioStream = null
 ## ヘッドレスでは鳴らないので、検査はこれを読む。
 var novel_bgm_stop_count := 0
-## 検査が読む。
 var last_novel_bgm_stop_fade := -1.0
 var novel_revealed := 0.0
 var novel_generation := 0

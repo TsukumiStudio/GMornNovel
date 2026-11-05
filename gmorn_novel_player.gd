@@ -45,7 +45,7 @@ func play_novel(id: String, path: String, completion_action := "") -> void:
 	host.novel_message.text = ""
 	_advance_novel()
 
-## 文字を出している途中なら次へ飛ばさず全部出す。読む前に消えたように見える。
+## 表示途中のクリックで台詞を消さず、全文を出す。
 func _advance_novel(from_input := false) -> void:
 	if host.novel_waiting:
 		return
