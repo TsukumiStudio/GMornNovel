@@ -2,6 +2,9 @@ extends RefCounted
 
 ## Lua 風の台本を命令の配列へ直す純関数。Lua VM ではなく、対応する表示命令だけを読む。
 
+## 訳す文言の命令の種類 → 文言の入った欄。
+const LOCALIZABLE := {"message": "text", "character_name": "display_name"}
+
 
 
 static func convert_rich_text(text: String) -> String:
@@ -67,8 +70,13 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 	var shorts_hide_regex := RegEx.new()
 	shorts_hide_regex.compile('^shorts_hide\\(\\s*([0-9.]*)')
 	var in_block_comment := false
+	var line_number := 0
+	var numbered := 0
 	while not file.eof_reached():
+		_number(result, numbered, line_number, path)
+		numbered = result.size()
 		var line := file.get_line().strip_edges()
+		line_number += 1
 		# Lua の複数行コメントは行を跨ぐ。閉じた後ろに続く命令は同じ行として読む。
 		if in_block_comment:
 			var comment_end := line.find("]]" )
@@ -192,7 +200,36 @@ static func parse_novel(path: String, resolve_path := Callable(), ignored_speake
 		var match_call := call_regex.search(_strip_trailing_comment(line))
 		if match_call != null:
 			result.append({"kind": "call", "name": match_call.get_string(1), "args": _parse_call_args(match_call.get_string(2))})
+	_number(result, numbered, line_number, path)
 	return result
+
+## 台本の行を指す翻訳キー（`assets/story/intro.lua:12`）。行番号は1始まり。
+static func line_key(path: String, line: int) -> String:
+	return "%s:%d" % [path.trim_prefix("res://"), line]
+
+## 命令に元の行番号 `line` を付け、表示する文言（台詞・`chara_name` の表示名）には翻訳キー `key` も付ける。
+static func _number(result: Array[Dictionary], from: int, line: int, path: String) -> void:
+	for index in range(from, result.size()):
+		var command := result[index]
+		command["line"] = line
+		if command.get("kind", "") in LOCALIZABLE:
+			command["key"] = line_key(path, line)
+
+## 台本の訳す文言を、翻訳キーと原文の組で返す。翻訳表の原本を作るときに使う。
+## `ignored_speaker` は `parse_novel()` と同じく、その話者の台詞を除く。
+static func localizable_texts(path: String, ignored_speaker := "") -> Array[Dictionary]:
+	var texts: Array[Dictionary] = []
+	for command: Dictionary in parse_novel(path, Callable(), ignored_speaker):
+		if command.get("kind", "") in LOCALIZABLE and command.has("key"):
+			texts.append({"key": command["key"], "text": String(command[LOCALIZABLE[command["kind"]]])})
+	return texts
+
+## 訳す文言を `translate.call(key, 原文)` の結果へ置き換える。訳が無いときに原文を返すのは translate の役目。
+static func localize(commands: Array[Dictionary], translate: Callable) -> void:
+	for command: Dictionary in commands:
+		if command.get("kind", "") in LOCALIZABLE and command.has("key"):
+			var field: String = LOCALIZABLE[command["kind"]]
+			command[field] = String(translate.call(String(command["key"]), String(command[field])))
 
 ## 文字列の中の `--` は注記ではない。
 static func _strip_trailing_comment(line: String) -> String:
