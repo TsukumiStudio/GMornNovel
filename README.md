@@ -118,6 +118,7 @@ Parser.localize(commands, func(key: String, text: String) -> String: return my_t
 - 訳す文言は `message` の台詞と `chara_name` の表示名。どちらの命令にも `key` が付く。全命令に元の行番号 `line`（1始まり）が付く
 - 行を足す・消すとそれより下のキーがずれる。古いキーの訳を出さないよう、`translate` は訳したときの原文と今の原文が同じときだけ訳を返す作りにする
 - 訳が無いときに原文を返すのは `translate` の役目
+- 0.3.0 から命令の Dictionary に `line`（と `key`）が増えた。命令を `==` で比べる検査は、比べる前に外す
 
 ## 3. 入力とライフサイクル
 

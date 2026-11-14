@@ -197,21 +197,23 @@ func _check_localize() -> void:
 	_write("res://localize.lua", '\n'.join([
 		'-- 注記',
 		'--[[ 複数行の',
+		'注記の続き',
 		'注記 ]] message("案内", "一行目")',
-		'',
+		'message("演出", "出さない")',
 		'chara_name("案内", "案内係")',
 		'wait(0.1)',
 		'message("案内", "二行目\\nの続き")',
+		'',
 	]))
 	var commands := Parser.parse_novel("res://localize.lua")
-	assert(commands.map(func(command: Dictionary) -> int: return command["line"]) == [3, 5, 6, 7], "命令の行番号が台本の行とずれる")
-	var texts := Parser.localizable_texts("res://localize.lua")
+	assert(commands.map(func(command: Dictionary) -> int: return command["line"]) == [4, 5, 6, 7, 8], "命令の行番号が台本の行とずれる")
+	var texts := Parser.localizable_texts("res://localize.lua", "演出")
 	assert(texts == [
-		{"key": "localize.lua:3", "text": "一行目"},
-		{"key": "localize.lua:5", "text": "案内係"},
-		{"key": "localize.lua:7", "text": "二行目\nの続き"},
+		{"key": "localize.lua:4", "text": "一行目"},
+		{"key": "localize.lua:6", "text": "案内係"},
+		{"key": "localize.lua:8", "text": "二行目\nの続き"},
 	], "訳す文言と翻訳キーが違う: %s" % [texts])
 	Parser.localize(commands, func(key: String, text: String) -> String: return "[%s]%s" % [key, text])
-	assert(commands[0]["text"] == "[localize.lua:3]一行目" and commands[1]["display_name"] == "[localize.lua:5]案内係",
+	assert(commands[0]["text"] == "[localize.lua:4]一行目" and commands[2]["display_name"] == "[localize.lua:6]案内係",
 		"翻訳キーで文言を置き換えない")
-	assert(not commands[2].has("key"), "訳さない命令に翻訳キーが付く")
+	assert(not commands[3].has("key"), "訳さない命令に翻訳キーが付く")

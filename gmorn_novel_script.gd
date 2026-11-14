@@ -220,14 +220,14 @@ static func _number(result: Array[Dictionary], from: int, line: int, path: Strin
 static func localizable_texts(path: String, ignored_speaker := "") -> Array[Dictionary]:
 	var texts: Array[Dictionary] = []
 	for command: Dictionary in parse_novel(path, Callable(), ignored_speaker):
-		if command.has("key"):
+		if command.get("kind", "") in LOCALIZABLE and command.has("key"):
 			texts.append({"key": command["key"], "text": String(command[LOCALIZABLE[command["kind"]]])})
 	return texts
 
 ## 訳す文言を `translate.call(key, 原文)` の結果へ置き換える。訳が無いときに原文を返すのは translate の役目。
 static func localize(commands: Array[Dictionary], translate: Callable) -> void:
 	for command: Dictionary in commands:
-		if command.has("key"):
+		if command.get("kind", "") in LOCALIZABLE and command.has("key"):
 			var field: String = LOCALIZABLE[command["kind"]]
 			command[field] = String(translate.call(String(command["key"]), String(command[field])))
 
