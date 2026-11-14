@@ -216,9 +216,10 @@ static func _number(result: Array[Dictionary], from: int, line: int, path: Strin
 			command["key"] = line_key(path, line)
 
 ## 台本の訳す文言を、翻訳キーと原文の組で返す。翻訳表の原本を作るときに使う。
-static func localizable_texts(path: String) -> Array[Dictionary]:
+## `ignored_speaker` は `parse_novel()` と同じく、その話者の台詞を除く。
+static func localizable_texts(path: String, ignored_speaker := "") -> Array[Dictionary]:
 	var texts: Array[Dictionary] = []
-	for command: Dictionary in parse_novel(path):
+	for command: Dictionary in parse_novel(path, Callable(), ignored_speaker):
 		if command.has("key"):
 			texts.append({"key": command["key"], "text": String(command[LOCALIZABLE[command["kind"]]])})
 	return texts
