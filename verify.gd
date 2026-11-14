@@ -34,6 +34,7 @@ func _run() -> void:
 		'all_hide(0)',
 	]))
 	assert(Parser.parse_novel("res://story.lua").size() == 17, "台本の対応命令を落とした")
+	_check_localize()
 	var view = View.instantiate()
 	root.add_child(view)
 	view.set_process(false)
@@ -145,7 +146,7 @@ func _run() -> void:
 		'message("呼出", "後")',
 	]))
 	var call_commands := Parser.parse_novel("res://call.lua")
-	assert(call_commands.size() == 4 and call_commands[0] == {"kind": "call", "name": "game_flag", "args": []},
+	assert(call_commands.size() == 4 and call_commands[0] == {"kind": "call", "name": "game_flag", "args": [], "line": 1},
 		"引数なしの関数呼び出しを読めない: %s" % [call_commands])
 	assert(call_commands[1]["args"] == ["a, b", 2, 0.5, true, "{0.5, 0.5}"],
 		"関数呼び出しの引数を読めない: %s" % [call_commands[1]])
@@ -175,7 +176,7 @@ func _run() -> void:
 	OS.unset_environment("GMORN_NOVEL_CHARACTER_SOUND_INTERVAL")
 	view.queue_free()
 	await process_frame
-	print("GMORN NOVEL VERIFY: PASS (commands, calls, character IDs, audio, input, cancellation, settings)")
+	print("GMORN NOVEL VERIFY: PASS (commands, calls, localize, character IDs, audio, input, cancellation, settings)")
 	quit()
 
 func _write(path: String, text: String) -> void:
@@ -191,3 +192,26 @@ func _click(view: Control) -> void:
 		event.pressed = down
 		event.position = button.get_global_rect().get_center()
 		view.get_viewport().push_input(event, true)
+
+func _check_localize() -> void:
+	_write("res://localize.lua", '\n'.join([
+		'-- 注記',
+		'--[[ 複数行の',
+		'注記 ]] message("案内", "一行目")',
+		'',
+		'chara_name("案内", "案内係")',
+		'wait(0.1)',
+		'message("案内", "二行目\\nの続き")',
+	]))
+	var commands := Parser.parse_novel("res://localize.lua")
+	assert(commands.map(func(command: Dictionary) -> int: return command["line"]) == [3, 5, 6, 7], "命令の行番号が台本の行とずれる")
+	var texts := Parser.localizable_texts("res://localize.lua")
+	assert(texts == [
+		{"key": "localize.lua:3", "text": "一行目"},
+		{"key": "localize.lua:5", "text": "案内係"},
+		{"key": "localize.lua:7", "text": "二行目\nの続き"},
+	], "訳す文言と翻訳キーが違う: %s" % [texts])
+	Parser.localize(commands, func(key: String, text: String) -> String: return "[%s]%s" % [key, text])
+	assert(commands[0]["text"] == "[localize.lua:3]一行目" and commands[1]["display_name"] == "[localize.lua:5]案内係",
+		"翻訳キーで文言を置き換えない")
+	assert(not commands[2].has("key"), "訳さない命令に翻訳キーが付く")

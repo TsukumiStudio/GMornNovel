@@ -100,6 +100,25 @@ message("friend", "名前を紹介した後の台詞")
 
 表示名の変更は画像差替え後も保ち、`play_novel()` のたびにリセットする。変更がなければ `message` 命令Dictionaryの `display_name` を使い、省略時はIDそのものを表示する。既定表示名・旧名のID変換は利用側の `script_loader` で付与し、共通アドオンに作品固有の人物名は置かない。現在の発話者IDは `novel_speaker_id`、立ち絵のIDは `character_id` で取得できる。
 
+### 台本を翻訳する
+
+台本には原文（例：日本語）をそのまま書き、訳は「台本のパス:行番号」のキーで引く。
+
+```gdscript
+const Parser := preload("res://addons/gmorn_novel/gmorn_novel_script.gd")
+
+# 翻訳表の原本を作る：[{"key": "stories/intro.lua:12", "text": "こんにちは。"}, …]
+var texts := Parser.localizable_texts("res://stories/intro.lua")
+
+# 再生する台本の文言を置き換える（script_loader の中で呼ぶ）
+var commands := Parser.parse_novel(path)
+Parser.localize(commands, func(key: String, text: String) -> String: return my_translate(key, text))
+```
+
+- 訳す文言は `message` の台詞と `chara_name` の表示名。どちらの命令にも `key` が付く。全命令に元の行番号 `line`（1始まり）が付く
+- 行を足す・消すとそれより下のキーがずれる。古いキーの訳を出さないよう、`translate` は訳したときの原文と今の原文が同じときだけ訳を返す作りにする
+- 訳が無いときに原文を返すのは `translate` の役目
+
 ## 3. 入力とライフサイクル
 
 | API | 動作 |
